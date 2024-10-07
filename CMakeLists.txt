@@ -24,15 +24,7 @@ find_package(acomms_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 
-find_package(Protobuf REQUIRED)
 find_package(goby 3.1 REQUIRED)
-find_package(dccl REQUIRED) # need ?
-
-## Build the protobuf messages
-file(GLOB ProtoFiles "${CMAKE_CURRENT_SOURCE_DIR}/src/proto/*.proto")
-PROTOBUF_GENERATE_CPP(ProtoSources ProtoHeaders ${ProtoFiles})
-add_library(proto STATIC ${ProtoSources} ${ProtoHeaders})
-target_link_libraries(proto ${PROTOBUF_LIBRARY})
 
 include_directories(${CMAKE_BINARY_DIR})
 
@@ -55,9 +47,7 @@ set(ros_lib
 )
 
 set(other_lib
-  proto
   goby
-  dccl
   evologics_driver
 )
 
