@@ -41,7 +41,7 @@ $ ros2 launch evologics_ros start.launch.py
 src/modem.cpp:              A node the wraps around Goby dynamic buffer for queuing messages and MAC manager for Time Division Multiple Access (TDMA).
 config/goby.yaml:           The configuration file for the modem node. The user should select the device driver (evologics/seatrac) they would like to use and define their dynamic buffer.
 config/evologics.yaml:      Specific configuration settings for the evologics modem/usbl.
-
+evologics_driver:           the actual driver interface with the hardware
 
 Publishers:
 /rx                         All data received from the modem driver
