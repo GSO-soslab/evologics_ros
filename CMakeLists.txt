@@ -55,22 +55,22 @@ set(other_lib
   evologics_driver
 )
 
-add_executable(modem_node
+add_executable(${PROJECT_NAME}_node
   src/node.cpp
   src/modem.cpp
 )
 
 ## Corrected dependencies for ROS 2 
-ament_target_dependencies(modem_node ${ros_lib})
-target_include_directories(modem_node PRIVATE src evologics_driver/src)
-target_link_libraries(modem_node ${other_lib})
+ament_target_dependencies(${PROJECT_NAME}_node ${ros_lib})
+target_include_directories(${PROJECT_NAME}_node PRIVATE src evologics_driver/src)
+target_link_libraries(${PROJECT_NAME}_node ${other_lib})
 
 
 ####################################################################
 # install                      
 ####################################################################
 
-install(TARGETS modem_node
+install(TARGETS ${PROJECT_NAME}_node evologics_driver
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION lib/${PROJECT_NAME}
@@ -90,4 +90,5 @@ install(DIRECTORY config
 
 ament_export_include_directories(include)
 ament_export_dependencies(${ros_lib})
+ament_export_libraries(evologics_driver)
 ament_package()

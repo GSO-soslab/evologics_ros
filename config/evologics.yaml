@@ -3,7 +3,7 @@
 ###################### Configuration ##############################
 ###################################################################
 
-/vampire/modem_node:
+/vampire/evologics_ros_node:
   ros__parameters:
 
     type: "modem"
