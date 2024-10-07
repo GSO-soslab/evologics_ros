@@ -1,8 +1,6 @@
 /vampire/evologics_ros_node:
   ros__parameters:
     goby:
-      driver: "evologics"
-      # driver: "seatrac"
       max_frame_bytes: 500
       mac_slot_time: 3
       valid_depth: -1

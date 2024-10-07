@@ -6,7 +6,7 @@
 /vampire/evologics_ros_node:
   ros__parameters:
 
-    type: "modem"
+    type: "usbl"
 
     usbl_configuration:
 

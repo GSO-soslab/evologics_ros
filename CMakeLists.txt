@@ -16,10 +16,13 @@ find_package(ament_cmake REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(geographic_msgs REQUIRED)
 find_package(robot_localization REQUIRED)
 find_package(acomms_msgs REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
 
 find_package(Protobuf REQUIRED)
 find_package(goby 3.1 REQUIRED)
@@ -43,9 +46,12 @@ set(ros_lib
   rclcpp 
   std_msgs 
   sensor_msgs
+  geometry_msgs
   geographic_msgs
   acomms_msgs
   robot_localization
+  tf2
+  tf2_geometry_msgs
 )
 
 set(other_lib

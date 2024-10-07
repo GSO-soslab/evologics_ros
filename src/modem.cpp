@@ -30,40 +30,30 @@ using namespace std::chrono_literals;
 
 Modem::Modem(std::string name) : Node(name)
 {
-    RCLCPP_INFO(get_logger(), "Modem constructor");
+    RCLCPP_INFO(get_logger(), "Evologics ROS2 driver started!");
 
     // ===================================================================== //
-    // load param
+    // setup param
     // ===================================================================== //
 
     parseGobyParams();
 
-    if (config_.driver == "evologics") { 
-        parseEvologicsParams();
-    }
+    parseEvologicsParams();
+
+    loadGoby();
+
+    // ===================================================================== //
+    // ROS2 setup
+    // ===================================================================== //
 
     if (config_.type == "usbl")
     {
+        usbl_pub_ = this->create_publisher<acomms_msgs::msg::UsblData>(
+            "usbl_data", 10 );   
 
-        track_pub_ = this->create_publisher<geographic_msgs::msg::GeoPoint>(
-            "usbl_track", 10 );        
-
-        toll_client_ = this->create_client<robot_localization::srv::ToLL>("toLL");
-
-        while (!toll_client_->wait_for_service(2s)) {
-            RCLCPP_WARN(get_logger(), 
-                "service(%s) not available, waiting again...", "toLL");
-        }
-
-
-        if (config_.driver == "evologics")
-        {
-            evo_driver_.set_usbl_callback(
-                std::bind(&Modem::evologicsPositioningData, this, std::placeholders::_1));
-        }
+        evo_driver_.set_usbl_callback(
+            std::bind(&Modem::evologicsPositioningData, this, std::placeholders::_1));
     }
-
-    loadGoby();
 
     modem_tx_sub_ = this->create_subscription<acomms_msgs::msg::AcommsTx>(
         "/tx", 10, std::bind(&Modem::addToBuffer, this, std::placeholders::_1));
@@ -77,6 +67,10 @@ Modem::Modem(std::string name) : Node(name)
     modem_rx_bytearray_pub_ = this->create_publisher<acomms_msgs::msg::AcommsRxByteArray>(
         config_.type + "/rx_bytearray", 10); 
     
+    // ===================================================================== //
+    // setup main thread
+    // ===================================================================== //
+
     loop_worker_ = std::thread([this] { loop(); });
     loop_worker_.detach();  
 
@@ -103,9 +97,6 @@ void Modem::loop()
 }
 
 void Modem::parseGobyParams() {
-
-    this->declare_parameter("goby.driver", "evologics");
-    this->get_parameter("goby.driver", config_.driver);
 
     this->declare_parameter("goby.max_frame_bytes", 100);
     this->get_parameter("goby.max_frame_bytes", config_.max_frame_bytes);
@@ -276,36 +267,28 @@ void Modem::parseEvologicsParams()
 
 void Modem::evologicsPositioningData(UsbllongMsg msg)
 {
-    // call the toll srv
-    auto request = std::make_shared<robot_localization::srv::ToLL::Request>();
+    // create the msg type
+    acomms_msgs::msg::UsblData usbl_msg;
+    usbl_msg.current_time = msg.current_time;
+    usbl_msg.measurement_time = msg.measurement_time;
+    usbl_msg.remote_address = msg.remote_address;
+    usbl_msg.xyz.x = msg.xyz.x;
+    usbl_msg.xyz.y = msg.xyz.y;
+    usbl_msg.xyz.z = msg.xyz.z;
+    usbl_msg.enu.x = msg.enu.e;
+    usbl_msg.enu.y = msg.enu.n;
+    usbl_msg.enu.z = msg.enu.u;
+    usbl_msg.propagation_time = msg.propogation_time;
+    usbl_msg.rssi = msg.rssi;
+    usbl_msg.integrity = msg.integrity;
+    usbl_msg.accuracy = msg.accuracy;
 
-    request->map_point.x = msg.pose.enu.e;
-    request->map_point.y = msg.pose.enu.n;
-    request->map_point.z = msg.pose.enu.u;
+    // convert rpy to tf2::quaternion, then to geometry_msgs::Quaternion
+    tf2::Quaternion quaternion;
+    quaternion.setRPY(msg.rpy.roll, msg.rpy.pitch, msg.rpy.yaw); 
+    usbl_msg.orientation = tf2::toMsg(quaternion);
 
-    RCLCPP_INFO(get_logger(), "E: %f\tN: %f\tU: %f", msg.pose.enu.e, msg.pose.enu.n, msg.pose.enu.u);
-
-    auto result = toll_client_->async_send_request(request);
-
-    // get the srv result and Publish USBL Tracking
-
-    if (rclcpp::spin_until_future_complete(this->get_node_base_interface(), result) 
-            == rclcpp::FutureReturnCode::SUCCESS)
-    {
-        geographic_msgs::msg::GeoPoint track;
-        geographic_msgs::msg::GeoPoseStamped geo_pose;
-
-        track.latitude = result.get()->ll_point.latitude;
-        track.longitude = result.get()->ll_point.longitude;
-        track.altitude = result.get()->ll_point.altitude;
-        track_pub_->publish(track);
-
-        RCLCPP_INFO(get_logger(), "Lat: %f\t Lon: %f", track.latitude, track.longitude);
-    }
-    else
-    {
-        RCLCPP_ERROR(get_logger(), "Failed to call ToLL service");
-    }
+    usbl_pub_->publish(usbl_msg);
 }
 
 void Modem::loadGoby()

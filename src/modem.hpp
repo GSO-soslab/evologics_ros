@@ -26,21 +26,21 @@
 // c++
 #include <thread>
 
-// ros2
+// ros2 standard 
 #include <rclcpp/rclcpp.hpp>
-
-//ros messages
 #include <sensor_msgs/msg/nav_sat_fix.hpp>
+#include <geographic_msgs/msg/geo_pose_stamped.hpp>
+#include <std_msgs/msg/u_int8_multi_array.hpp>
+#include <std_msgs/msg/byte_multi_array.hpp>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+
+// acomms_msgs
 #include <acomms_msgs/msg/acomms_rx.hpp>
 #include <acomms_msgs/msg/acomms_tx.hpp>
 #include <acomms_msgs/msg/acomms_rx_byte_array.hpp>
 #include <acomms_msgs/msg/acomms_tx_byte_array.hpp>
-#include <geographic_msgs/msg/geo_pose_stamped.hpp>
-#include <std_msgs/msg/u_int8_multi_array.hpp>
-#include <std_msgs/msg/byte_multi_array.hpp>
-
-//ros services
-#include <robot_localization/srv/to_ll.hpp>
+#include <acomms_msgs/msg/usbl_data.hpp>
 
 //goby includes
 #include <goby/acomms/connect.h>
@@ -138,6 +138,25 @@ private:
     goby::acomms::DynamicBuffer<std::string> buffer_;
 
     // ===================================================================== //
+    // ROS2 related
+    // ===================================================================== //
+
+    rclcpp::Publisher<acomms_msgs::msg::UsblData>::SharedPtr 
+        usbl_pub_;    
+
+    rclcpp::Subscription<acomms_msgs::msg::AcommsTx>::SharedPtr 
+        modem_tx_sub_;    
+
+    rclcpp::Subscription<acomms_msgs::msg::AcommsTxByteArray>::SharedPtr 
+        modem_tx_bytearray_sub_;    
+
+    rclcpp::Publisher<acomms_msgs::msg::AcommsRx>::SharedPtr 
+        modem_rx_pub_;
+
+    rclcpp::Publisher<acomms_msgs::msg::AcommsRxByteArray>::SharedPtr 
+        modem_rx_bytearray_pub_;
+
+    // ===================================================================== //
     // functions
     // ===================================================================== //
 
@@ -174,25 +193,4 @@ private:
      * @param data_msg the incoming message
      */
     void receivedData(const goby::acomms::protobuf::ModemTransmission &data_msg);
-
-    // ===================================================================== //
-    // ROS2 related
-    // ===================================================================== //
-    rclcpp::Publisher<geographic_msgs::msg::GeoPoint>::SharedPtr 
-        track_pub_;    
-
-    rclcpp::Client<robot_localization::srv::ToLL>::SharedPtr 
-        toll_client_;
-
-    rclcpp::Subscription<acomms_msgs::msg::AcommsTx>::SharedPtr 
-        modem_tx_sub_;    
-
-    rclcpp::Subscription<acomms_msgs::msg::AcommsTxByteArray>::SharedPtr 
-        modem_tx_bytearray_sub_;    
-
-    rclcpp::Publisher<acomms_msgs::msg::AcommsRx>::SharedPtr 
-        modem_rx_pub_;
-
-    rclcpp::Publisher<acomms_msgs::msg::AcommsRxByteArray>::SharedPtr 
-        modem_rx_bytearray_pub_;
 };
