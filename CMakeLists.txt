@@ -16,10 +16,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
-find_package(sensor_msgs REQUIRED) # need ?
-find_package(nav_msgs REQUIRED) # need ?
-find_package(message_filters REQUIRED) # need ?
-find_package(geometry_msgs REQUIRED) # need ?
+find_package(sensor_msgs REQUIRED)
 find_package(geographic_msgs REQUIRED)
 find_package(robot_localization REQUIRED)
 find_package(acomms_msgs REQUIRED)
@@ -40,12 +37,12 @@ include_directories(${CMAKE_BINARY_DIR})
 # build                      
 ####################################################################
 
+add_subdirectory(evologics_driver)
+
 set(ros_lib
   rclcpp 
   std_msgs 
-  geometry_msgs
   sensor_msgs
-  nav_msgs
   geographic_msgs
   acomms_msgs
   robot_localization
@@ -55,25 +52,17 @@ set(other_lib
   proto
   goby
   dccl
+  evologics_driver
 )
-
-# include_directories(
-#   include/seatrac_driver
-#   include/evologics_driver
-#   include/AT
-# )
 
 add_executable(modem_node
   src/node.cpp
   src/modem.cpp
-  # include/seatrac_driver/seatrac_driver.cpp
-  # include/evologics_driver/evologics_driver.cpp
-  # include/AT/ATsentence.cpp
 )
 
 ## Corrected dependencies for ROS 2 
 ament_target_dependencies(modem_node ${ros_lib})
-
+target_include_directories(modem_node PRIVATE src evologics_driver/src)
 target_link_libraries(modem_node ${other_lib})
 
 
@@ -87,9 +76,9 @@ install(TARGETS modem_node
   RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
-install(DIRECTORY include/
-  DESTINATION include/
-)
+# install(DIRECTORY include/
+#   DESTINATION include/
+# )
 
 install(DIRECTORY launch 
   DESTINATION share/${PROJECT_NAME}

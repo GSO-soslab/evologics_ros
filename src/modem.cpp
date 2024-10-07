@@ -41,9 +41,6 @@ Modem::Modem(std::string name) : Node(name)
     if (config_.driver == "evologics") { 
         parseEvologicsParams();
     }
-    else if (config_.driver == "seatrac") { 
-        parseSeatracParams();
-    }    
 
     if (config_.type == "usbl")
     {
@@ -64,25 +61,20 @@ Modem::Modem(std::string name) : Node(name)
             evo_driver_.set_usbl_callback(
                 std::bind(&Modem::evologicsPositioningData, this, std::placeholders::_1));
         }
-        else if (config_.driver == "seatrac")
-        {
-            seatrac_driver_.set_usbl_callback(
-                std::bind(&Modem::seatracPositioningData, this, std::placeholders::_1));
-        }
     }
 
     loadGoby();
 
-    modem_tx_sub_ = this->create_subscription<acomms_msgs::msg::MvpAcommsTx>(
+    modem_tx_sub_ = this->create_subscription<acomms_msgs::msg::AcommsTx>(
         "/tx", 10, std::bind(&Modem::addToBuffer, this, std::placeholders::_1));
 
-    modem_tx_bytearray_sub_ = this->create_subscription<acomms_msgs::msg::MvpAcommsTxByteArray>(
+    modem_tx_bytearray_sub_ = this->create_subscription<acomms_msgs::msg::AcommsTxByteArray>(
         "/tx_bytearray", 10, std::bind(&Modem::addBytesToBuffer, this, std::placeholders::_1));
 
-    modem_rx_pub_ = this->create_publisher<acomms_msgs::msg::MvpAcommsRx>(
+    modem_rx_pub_ = this->create_publisher<acomms_msgs::msg::AcommsRx>(
         config_.type + "/rx", 10);
 
-    modem_rx_bytearray_pub_ = this->create_publisher<acomms_msgs::msg::MvpAcommsRxByteArray>(
+    modem_rx_bytearray_pub_ = this->create_publisher<acomms_msgs::msg::AcommsRxByteArray>(
         config_.type + "/rx_bytearray", 10); 
     
     loop_worker_ = std::thread([this] { loop(); });
@@ -108,7 +100,6 @@ void Modem::loop()
 
         rate.sleep();
     }
-    
 }
 
 void Modem::parseGobyParams() {
@@ -283,47 +274,6 @@ void Modem::parseEvologicsParams()
         config_.sound_speed);
 }
 
-void Modem::parseSeatracParams()
-{
-    this->declare_parameter(
-        "type", "modem");
-    this->get_parameter(
-        "type", config_.type);
-
-    config_.interface.if_type = "tcp";
-
-    this->declare_parameter(
-        config_.type+"_configuration.interface.device", "/dev/ttyUSB0");
-    this->get_parameter(
-        config_.type+"_configuration.interface.device", 
-        config_.interface.device);
-
-    this->declare_parameter(
-        config_.type+"_configuration.interface.baudrate", 115200);
-    this->get_parameter(
-        config_.type+"_configuration.interface.baudrate", 
-        config_.interface.baudrate);
-
-
-    this->declare_parameter(
-        config_.type+"_configuration.local_address", 1);
-    this->get_parameter(
-        config_.type+"_configuration.local_address", 
-        config_.local_address);
-
-    this->declare_parameter(
-        config_.type+"_configuration.remote_address", 2);
-    this->get_parameter(
-        config_.type+"_configuration.remote_address", 
-        config_.remote_address);
-
-    this->declare_parameter(
-        config_.type+"_configuration.sound_speed", 1500);
-    this->get_parameter(
-        config_.type+"_configuration.sound_speed", 
-        config_.sound_speed);
-}
-
 void Modem::evologicsPositioningData(UsbllongMsg msg)
 {
     // call the toll srv
@@ -356,11 +306,6 @@ void Modem::evologicsPositioningData(UsbllongMsg msg)
     {
         RCLCPP_ERROR(get_logger(), "Failed to call ToLL service");
     }
-}
-
-void Modem::seatracPositioningData(ACOFIX_T msg)
-{
-
 }
 
 void Modem::loadGoby()
@@ -463,13 +408,13 @@ void Modem::loadBuffer()
 
 void Modem::receivedData(const goby::acomms::protobuf::ModemTransmission &data_msg)
 {
-    acomms_msgs::msg::MvpAcommsRx msg;
+    acomms_msgs::msg::AcommsRx msg;
 
     msg.data = data_msg.frame()[0];
 
     modem_rx_pub_->publish(msg);
 
-    acomms_msgs::msg::MvpAcommsRxByteArray byte_msg;
+    acomms_msgs::msg::AcommsRxByteArray byte_msg;
     std::vector<uint8_t> data(data_msg.frame()[0].begin(), data_msg.frame()[0].end());
     byte_msg.msg.data = data;
 
@@ -502,7 +447,7 @@ void Modem::dataRequest(goby::acomms::protobuf::ModemTransmission *msg)
     
 }
 
-void Modem::addToBuffer(const acomms_msgs::msg::MvpAcommsTx::SharedPtr msg)
+void Modem::addToBuffer(const acomms_msgs::msg::AcommsTx::SharedPtr msg)
 {
     if (dynamic_buffer_config_.find(msg->subbuffer_id) != 
         dynamic_buffer_config_.end())
@@ -520,7 +465,7 @@ void Modem::addToBuffer(const acomms_msgs::msg::MvpAcommsTx::SharedPtr msg)
     }
 }
 
-void Modem::addBytesToBuffer(const acomms_msgs::msg::MvpAcommsTxByteArray::SharedPtr msg)
+void Modem::addBytesToBuffer(const acomms_msgs::msg::AcommsTxByteArray::SharedPtr msg)
 {
     if (dynamic_buffer_config_.find(msg->subbuffer_id) 
         != dynamic_buffer_config_.end())

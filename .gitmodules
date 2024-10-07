@@ -1,0 +1,3 @@
+[submodule "evologics_driver"]
+	path = evologics_driver
+	url = https://github.com/GSO-soslab/evologics_driver

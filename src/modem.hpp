@@ -30,12 +30,11 @@
 #include <rclcpp/rclcpp.hpp>
 
 //ros messages
-#include <nav_msgs/msg/odometry.hpp> // need ?
 #include <sensor_msgs/msg/nav_sat_fix.hpp>
-#include <acomms_msgs/msg/mvp_acomms_rx.hpp>
-#include <acomms_msgs/msg/mvp_acomms_tx.hpp>
-#include <acomms_msgs/msg/mvp_acomms_rx_byte_array.hpp>
-#include <acomms_msgs/msg/mvp_acomms_tx_byte_array.hpp>
+#include <acomms_msgs/msg/acomms_rx.hpp>
+#include <acomms_msgs/msg/acomms_tx.hpp>
+#include <acomms_msgs/msg/acomms_rx_byte_array.hpp>
+#include <acomms_msgs/msg/acomms_tx_byte_array.hpp>
 #include <geographic_msgs/msg/geo_pose_stamped.hpp>
 #include <std_msgs/msg/u_int8_multi_array.hpp>
 #include <std_msgs/msg/byte_multi_array.hpp>
@@ -55,8 +54,6 @@
 #include <goby/util/debug_logger/flex_ostream.h>         // for FlexOs...
 #include <goby/util/debug_logger/flex_ostreambuf.h>      // for DEBUG1
 
-//driver includes
-#include "seatrac_driver.h"
 #include "evologics_driver.h"
 
 class Modem : public rclcpp::Node
@@ -136,8 +133,6 @@ private:
 
     goby::acomms::EvologicsDriver evo_driver_;
 
-    goby::acomms::SeatracDriver seatrac_driver_;
-
     goby::acomms::MACManager mac_;
 
     goby::acomms::DynamicBuffer<std::string> buffer_;
@@ -160,15 +155,11 @@ private:
 
     void parseEvologicsParams();
 
-    void parseSeatracParams();
-
     void evologicsPositioningData(UsbllongMsg msg);
 
-    void seatracPositioningData(ACOFIX_T msg);
+    void addToBuffer(const acomms_msgs::msg::AcommsTx::SharedPtr msg);
 
-    void addToBuffer(const acomms_msgs::msg::MvpAcommsTx::SharedPtr msg);
-
-    void addBytesToBuffer(const acomms_msgs::msg::MvpAcommsTxByteArray::SharedPtr msg);
+    void addBytesToBuffer(const acomms_msgs::msg::AcommsTxByteArray::SharedPtr msg);
 
     /**
      * @brief slot that the driver calls when it wants to send data
@@ -193,15 +184,15 @@ private:
     rclcpp::Client<robot_localization::srv::ToLL>::SharedPtr 
         toll_client_;
 
-    rclcpp::Subscription<acomms_msgs::msg::MvpAcommsTx>::SharedPtr 
+    rclcpp::Subscription<acomms_msgs::msg::AcommsTx>::SharedPtr 
         modem_tx_sub_;    
 
-    rclcpp::Subscription<acomms_msgs::msg::MvpAcommsTxByteArray>::SharedPtr 
+    rclcpp::Subscription<acomms_msgs::msg::AcommsTxByteArray>::SharedPtr 
         modem_tx_bytearray_sub_;    
 
-    rclcpp::Publisher<acomms_msgs::msg::MvpAcommsRx>::SharedPtr 
+    rclcpp::Publisher<acomms_msgs::msg::AcommsRx>::SharedPtr 
         modem_rx_pub_;
 
-    rclcpp::Publisher<acomms_msgs::msg::MvpAcommsRxByteArray>::SharedPtr 
+    rclcpp::Publisher<acomms_msgs::msg::AcommsRxByteArray>::SharedPtr 
         modem_rx_bytearray_pub_;
 };

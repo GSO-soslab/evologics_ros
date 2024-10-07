@@ -1,30 +1,23 @@
 <?xml version="1.0"?>
-<package format="3">     <!-- was 2 -->
-  <name>mvp_acomms</name>
+<package format="3"> 
+  <name>evologics_ros</name>
   <version>0.0.0</version>
   <description>The communication package</description>
 
-  <maintainer email="jason_miller@uri.edu">jason_miller</maintainer>
-  <author email="jason_miller@uri.edu">jason_miller</author>
+  <maintainer email="jason_miller@uri.edu">Jason Miller</maintainer>
+  <author email="jason_miller@uri.edu">Jason Miller</author>
+  <author email="croman2@uri.edu">Chris Roman</author>
+  <author email="linzhao@uri.edu">Lin Zhao</author>
 
   <license>GPLv3</license>
 
+  <buildtool_depend>ament_cmake</buildtool_depend>  
 
-  <!-- <buildtool_depend>catkin</buildtool_depend>  -->
-  <buildtool_depend>ament_cmake</buildtool_depend>  <!-- cnr -->
-
-  <build_depend>rclcpp</build_depend>  <!-- cnr -->
-  <!-- <depend>roscpp</depend> -->
-
+  <build_depend>rclcpp</build_depend> 
   
   <depend>std_msgs</depend>
   <depend>std_srvs</depend>
-  <depend>sensor_msgs</depend>  <!-- maybe? -->
-  <!-- <depend>mvp_msgs</depend>    cnr -->
-  <!-- <depend>nav_msgs</depend>    cnr -->
-  <depend>nav_msgs</depend>
-  <depend>message_filters</depend>
-  <depend>geometry_msgs</depend>
+  <depend>sensor_msgs</depend>  
   <depend>geographic_msgs</depend>
   <depend>robot_localization</depend>
   <depend>serial</depend>
@@ -34,10 +27,10 @@
   <depend>dynamic_reconfigure</depend>
   <depend>acomms_msgs</depend>
 
-  <member_of_group>rosidl_interface_packages</member_of_group> <!-- added cnr -->
+  <member_of_group>rosidl_interface_packages</member_of_group>
 
 
   <export>
-  <build_type>ament_cmake</build_type>  <!-- cnr -->
+  <build_type>ament_cmake</build_type>
   </export>
 </package>
