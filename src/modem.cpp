@@ -269,6 +269,8 @@ void Modem::evologicsPositioningData(UsbllongMsg msg)
 {
     // create the msg type
     acomms_msgs::msg::UsblData usbl_msg;
+    usbl_msg.header.frame_id = "evologics";
+    usbl_msg.header.stamp = rclcpp::Clock(RCL_ROS_TIME).now();
     usbl_msg.current_time = msg.current_time;
     usbl_msg.measurement_time = msg.measurement_time;
     usbl_msg.remote_address = msg.remote_address;
@@ -391,13 +393,21 @@ void Modem::loadBuffer()
 
 void Modem::receivedData(const goby::acomms::protobuf::ModemTransmission &data_msg)
 {
+    // string msg
     acomms_msgs::msg::AcommsRx msg;
 
+    msg.header.frame_id = "evologics";
+    msg.header.stamp = rclcpp::Clock(RCL_ROS_TIME).now();
     msg.data = data_msg.frame()[0];
 
     modem_rx_pub_->publish(msg);
 
+    // UInt8MultiArray msg
+
     acomms_msgs::msg::AcommsRxByteArray byte_msg;
+
+    byte_msg.header.frame_id = "evologics";
+    byte_msg.header.stamp = rclcpp::Clock(RCL_ROS_TIME).now();
     std::vector<uint8_t> data(data_msg.frame()[0].begin(), data_msg.frame()[0].end());
     byte_msg.msg.data = data;
 
@@ -457,7 +467,7 @@ void Modem::addBytesToBuffer(const acomms_msgs::msg::AcommsTxByteArray::SharedPt
 
         std::string str(msg->msg.data.begin(), msg->msg.data.end());
 
-        buffer_.push({config_.remote_address, msg->subbuffer_id, goby::time::SteadyClock::now(),str });
+        buffer_.push({config_.remote_address, msg->subbuffer_id, goby::time::SteadyClock::now(), str});
 
         RCLCPP_INFO(get_logger(), "Data Added to Buffer: %s", 
             goby::util::hex_encode(str).c_str()); 
