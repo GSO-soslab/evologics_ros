@@ -56,10 +56,10 @@ Modem::Modem(std::string name) : Node(name)
     }
 
     modem_tx_sub_ = this->create_subscription<acomms_msgs::msg::AcommsTx>(
-        "/tx", 10, std::bind(&Modem::addToBuffer, this, std::placeholders::_1));
+        config_.type + "/tx", 10, std::bind(&Modem::addToBuffer, this, std::placeholders::_1));
 
     modem_tx_bytearray_sub_ = this->create_subscription<acomms_msgs::msg::AcommsTxByteArray>(
-        "/tx_bytearray", 10, std::bind(&Modem::addBytesToBuffer, this, std::placeholders::_1));
+        config_.type + "/tx_bytearray", 10, std::bind(&Modem::addBytesToBuffer, this, std::placeholders::_1));
 
     modem_rx_pub_ = this->create_publisher<acomms_msgs::msg::AcommsRx>(
         config_.type + "/rx", 10);
