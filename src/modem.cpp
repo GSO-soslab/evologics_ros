@@ -42,6 +42,8 @@ Modem::Modem(std::string name) : Node(name)
 
     loadGoby();
 
+    configModem();
+
     // ===================================================================== //
     // ROS2 setup
     // ===================================================================== //
@@ -263,6 +265,39 @@ void Modem::parseEvologicsParams()
     this->get_parameter(
         config_.type+"_configuration.sound_speed", 
         config_.sound_speed);
+}
+
+void Modem::configModem()
+{
+    evo_driver_.set_source_level(config_.source_level);
+
+    evo_driver_.set_source_control(config_.source_control);
+
+    evo_driver_.set_gain(config_.gain_level);
+
+    evo_driver_.set_carrier_waveform_id(config_.carrier_waveform_id);
+
+    evo_driver_.set_local_address(config_.local_address);
+
+    evo_driver_.set_remote_address(config_.remote_address);
+
+    evo_driver_.set_highest_address(config_.highest_address);
+
+    evo_driver_.set_cluster_size(config_.cluster_size);
+
+    evo_driver_.set_packet_time(config_.packet_time);
+
+    evo_driver_.set_retry_count(config_.retry_count);
+
+    evo_driver_.set_retry_timeout(config_.retry_timeout);
+
+    evo_driver_.set_keep_online_count(config_.keep_online_count);
+
+    evo_driver_.set_idle_timeout(config_.idle_timeout);
+
+    evo_driver_.set_channel_protocol_id(config_.channel_protocol_id);
+
+    evo_driver_.set_sound_speed(config_.sound_speed);
 }
 
 void Modem::evologicsPositioningData(UsbllongMsg msg)
