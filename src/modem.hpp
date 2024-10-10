@@ -174,6 +174,8 @@ private:
 
     void parseEvologicsParams();
 
+    void configModem();
+
     void evologicsPositioningData(UsbllongMsg msg);
 
     void addToBuffer(const acomms_msgs::msg::AcommsTx::SharedPtr msg);
