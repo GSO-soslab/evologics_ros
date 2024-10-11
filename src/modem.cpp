@@ -72,9 +72,9 @@ Modem::Modem(std::string name) : Node(name)
     // ===================================================================== //
     // setup main thread
     // ===================================================================== //
-
-    loop_worker_ = std::thread([this] { loop(); });
-    loop_worker_.detach();  
+    loop();
+    // loop_worker_ = std::thread([this] { loop(); });
+    // loop_worker_.detach();  
 
 }
 
