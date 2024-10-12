@@ -463,7 +463,7 @@ void Modem::dataRequest(goby::acomms::protobuf::ModemTransmission *msg)
                 buffer_.top(dest, msg->max_frame_bytes() - frame->size());
 
             // *frame += buffer_value.data.data();
-            frame->append(buffer_value.data + '\n');
+            frame->append(buffer_value.data);
 
             buffer_.erase(buffer_value);
         }
