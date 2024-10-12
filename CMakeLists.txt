@@ -1,90 +1,76 @@
 cmake_minimum_required(VERSION 3.5.1)
-
-if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 17)
-endif()
-if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic)
-endif()
-
 project(evologics_ros)
+
+## Compile as C++11, supported in ROS Kinetic and newer
+add_compile_options(-std=c++17)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/")
 
-## Find ROS 2 packages
-find_package(ament_cmake REQUIRED)
-find_package(rosidl_default_generators REQUIRED)
-find_package(rclcpp REQUIRED)
-find_package(std_msgs REQUIRED)
-find_package(geometry_msgs REQUIRED)
-find_package(sensor_msgs REQUIRED)
-find_package(geographic_msgs REQUIRED)
-find_package(robot_localization REQUIRED)
-find_package(acomms_msgs REQUIRED)
-find_package(tf2 REQUIRED)
-find_package(tf2_geometry_msgs REQUIRED)
+## Find catkin macros and libraries
+## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
+## is used, also find other catkin packages
+find_package(catkin REQUIRED COMPONENTS
+  roscpp
+  acomms_msgs
+  std_msgs
+  nav_msgs
+  message_filters
+  geometry_msgs
+  geographic_msgs
+  tf2_ros
+)
+
+find_package(Protobuf REQUIRED)
+
 
 find_package(goby 3.1 REQUIRED)
 
-include_directories(${CMAKE_BINARY_DIR})
+find_package(dccl REQUIRED)
 
-####################################################################
-# build                      
-####################################################################
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "/usr/share/cmake/geographiclib/")
+find_package(GeographicLib REQUIRED)
+
+include_directories( ${CMAKE_BINARY_DIR} )
 
 add_subdirectory(evologics_driver)
 
-set(ros_lib
-  rclcpp 
-  std_msgs 
-  sensor_msgs
-  geometry_msgs
-  geographic_msgs
-  acomms_msgs
-  robot_localization
-  tf2
-  tf2_geometry_msgs
+
+###################################
+## catkin specific configuration ##
+###################################
+## The catkin_package macro generates cmake config files for your package
+## Declare things to be passed to dependent projects
+## INCLUDE_DIRS: uncomment this if your package contains header files
+## LIBRARIES: libraries you create in this project that dependent projects also need
+## CATKIN_DEPENDS: catkin_packages dependent projects also need
+## DEPENDS: system dependencies of this project that dependent projects also need
+
+catkin_package(
+  # INCLUDE_DIRS 
+  # LIBRARIES
+  CATKIN_DEPENDS roscpp acomms_msgs std_msgs geometry_msgs geographic_msgs 
+  # DEPENDS
 )
 
-set(other_lib
-  goby
-  evologics_driver
+###########
+## Build ##
+###########
+
+include_directories(
+  ${catkin_INCLUDE_DIRS}
 )
 
-add_executable(${PROJECT_NAME}_node
-  src/node.cpp
+add_executable(modem_node
   src/modem.cpp
 )
 
-## Corrected dependencies for ROS 2 
-ament_target_dependencies(${PROJECT_NAME}_node ${ros_lib})
-target_include_directories(${PROJECT_NAME}_node PRIVATE src evologics_driver/src)
-target_link_libraries(${PROJECT_NAME}_node ${other_lib})
+add_dependencies(modem_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 
-####################################################################
-# install                      
-####################################################################
-
-install(TARGETS ${PROJECT_NAME}_node evologics_driver
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib
-  RUNTIME DESTINATION lib/${PROJECT_NAME}
+target_link_libraries(modem_node
+  ${catkin_LIBRARIES}
+  ${PROTOBUF_LIBRARY}
+  goby
+  dccl
+  evologics_driver
 )
-
-# install(DIRECTORY include/
-#   DESTINATION include/
-# )
-
-install(DIRECTORY launch 
-  DESTINATION share/${PROJECT_NAME}
-)
-
-install(DIRECTORY config 
-  DESTINATION share/${PROJECT_NAME}
-)
-
-ament_export_include_directories(include)
-ament_export_dependencies(${ros_lib})
-ament_export_libraries(evologics_driver)
-ament_package()

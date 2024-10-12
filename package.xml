@@ -11,27 +11,16 @@
 
   <license>GPLv3</license>
 
-  <buildtool_depend>ament_cmake</buildtool_depend>  
-
-  <build_depend>rclcpp</build_depend> 
-  
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>roscpp</depend>
+  <depend>acomms_msgs</depend>
   <depend>std_msgs</depend>
-  <depend>std_srvs</depend>
-  <depend>sensor_msgs</depend>  
-  <depend>geometry_msgs</depend>  
+  <depend>geometry_msgs</depend>
   <depend>geographic_msgs</depend>
-  <depend>robot_localization</depend>
-  <depend>tf2</depend>
+  <depend>tf2_ros</depend>
   <depend>proto</depend>
   <depend>goby</depend>
   <depend>dccl</depend>
   <depend>dynamic_reconfigure</depend>
-  <depend>acomms_msgs</depend>
 
-  <member_of_group>rosidl_interface_packages</member_of_group>
-
-
-  <export>
-  <build_type>ament_cmake</build_type>
-  </export>
 </package>

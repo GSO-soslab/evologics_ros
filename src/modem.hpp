@@ -14,33 +14,27 @@
     You should have received a copy of the GNU General Public License
     along with the project.  If not, see <https://www.gnu.org/licenses/>.
 
-    Author: Jason Miller, jason_miller@uri.edu
-    Author: Lin Zhao, linzhao@uri.edu
-    Year: 2023-2024
+    Author: Jason Miller
+    Email: jason_miller@uri.edu
+    Year: 2023
 
-    Copyright (C) 2023-2024 Smart Ocean Systems Laboratory
+    Copyright (C) 2023 Smart Ocean Systems Laboratory
 */
 
 #pragma once
 
-// c++
-#include <thread>
+#include "ros/ros.h"
 
-// ros2 standard 
-#include <rclcpp/rclcpp.hpp>
-#include <sensor_msgs/msg/nav_sat_fix.hpp>
-#include <geographic_msgs/msg/geo_pose_stamped.hpp>
-#include <std_msgs/msg/u_int8_multi_array.hpp>
-#include <std_msgs/msg/byte_multi_array.hpp>
-#include <tf2/LinearMath/Quaternion.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+//ros messages
+#include <acomms_msgs/AcommsRx.h>
+#include <acomms_msgs/AcommsTx.h>
+#include <acomms_msgs/AcommsRxByteArray.h>
+#include <acomms_msgs/AcommsTxByteArray.h>
+#include <geographic_msgs/GeoPoseStamped.h>
+#include <acomms_msgs/UsblData.h>
 
-// acomms_msgs
-#include <acomms_msgs/msg/acomms_rx.hpp>
-#include <acomms_msgs/msg/acomms_tx.hpp>
-#include <acomms_msgs/msg/acomms_rx_byte_array.hpp>
-#include <acomms_msgs/msg/acomms_tx_byte_array.hpp>
-#include <acomms_msgs/msg/usbl_data.hpp>
+#include <std_msgs/UInt8MultiArray.h>
+#include <std_msgs/ByteMultiArray.h>
 
 //goby includes
 #include <goby/acomms/connect.h>
@@ -51,24 +45,36 @@
 #include <goby/acomms/modem_driver.h>
 #include <goby/util/binary.h>
 #include <goby/util/debug_logger.h>
-#include <goby/util/debug_logger/flex_ostream.h>         // for FlexOs...
-#include <goby/util/debug_logger/flex_ostreambuf.h>      // for DEBUG1
+#include "goby/util/debug_logger/flex_ostream.h"         // for FlexOs...
+#include "goby/util/debug_logger/flex_ostreambuf.h"      // for DEBUG1
 
+//driver includes
 #include "evologics_driver.h"
 
-class Modem : public rclcpp::Node
-{
+class Modem{
 
 public:
-    Modem(std::string name = "modem");
 
+    Modem();
     ~Modem();
 
-private:
+    
 
-    // ===================================================================== //
-    // types
-    // ===================================================================== //
+private:
+    ros::NodeHandlePtr nh_;
+    ros::NodeHandlePtr pnh_;
+
+    ros::Subscriber modem_tx_;
+    ros::Publisher modem_rx_;
+
+    ros::Subscriber modem_tx_bytearray_;
+    ros::Publisher modem_rx_bytearray_;
+
+    ros::Publisher evologics_usbllong_pub_;
+
+    ros::ServiceClient toll_;
+
+
 
     struct Interface
     {
@@ -83,6 +89,18 @@ private:
     {
         std::vector<std::string> messages;
     };
+
+    struct MessageConfig
+    {
+        bool ack;
+        int blackout_time;
+        int max_queue;
+        bool newest_first;
+        int ttl;
+        int value_base;
+    };
+
+    std::map<std::string, MessageConfig> dynamic_buffer_config_;
 
     struct Config
     {
@@ -111,88 +129,32 @@ private:
         int sound_speed;
     };
 
-    struct MessageConfig
-    {
-        bool ack;
-        int blackout_time;
-        int max_queue;
-        bool newest_first;
-        int ttl;
-        int value_base;
-    };
+    goby::acomms::MACManager mac;
 
-    // ===================================================================== //
-    // global variables
-    // ===================================================================== //
-
-    std::thread loop_worker_;
-
-    Config config_;
-
-    std::map<std::string, MessageConfig> dynamic_buffer_config_;
+    void loop();
+    void loadGoby();
+    void loadBuffer();
+    void configModem();
+    void parseGobyParams();
+    void parseEvologicsParams();
+    void dataRequest(goby::acomms::protobuf::ModemTransmission *msg);
+    void addToBuffer(const acomms_msgs::AcommsTxConstPtr& msg);
+    void addBytesToBuffer(const acomms_msgs::AcommsTxByteArrayConstPtr &msg);
+    void receivedData(const goby::acomms::protobuf::ModemTransmission &data_msg);
+    void evologicsPositioningData(UsbllongMsg msg);
 
     goby::acomms::EvologicsDriver evo_driver_;
 
-    goby::acomms::MACManager mac_;
-
     goby::acomms::DynamicBuffer<std::string> buffer_;
 
-    // ===================================================================== //
-    // ROS2 related
-    // ===================================================================== //
+    ros::Timer timer_;
 
-    rclcpp::Publisher<acomms_msgs::msg::UsblData>::SharedPtr 
-        usbl_pub_;    
+    Config config_;
 
-    rclcpp::Subscription<acomms_msgs::msg::AcommsTx>::SharedPtr 
-        modem_tx_sub_;    
+    goby::acomms::DCCLCodec* dccl_ = goby::acomms::DCCLCodec::get();
+    
 
-    rclcpp::Subscription<acomms_msgs::msg::AcommsTxByteArray>::SharedPtr 
-        modem_tx_bytearray_sub_;    
 
-    rclcpp::Publisher<acomms_msgs::msg::AcommsRx>::SharedPtr 
-        modem_rx_pub_;
 
-    rclcpp::Publisher<acomms_msgs::msg::AcommsRxByteArray>::SharedPtr 
-        modem_rx_bytearray_pub_;
-
-    // ===================================================================== //
-    // functions
-    // ===================================================================== //
-
-    void loop();
-
-    /**
-     * @brief the goby dccl, mac, queue, and driver are configured and initialized
-     *
-     */
-    void loadGoby();
-
-    void loadBuffer();
-
-    void parseGobyParams();
-
-    void parseEvologicsParams();
-
-    void configModem();
-
-    void evologicsPositioningData(UsbllongMsg msg);
-
-    void addToBuffer(const acomms_msgs::msg::AcommsTx::SharedPtr msg);
-
-    void addBytesToBuffer(const acomms_msgs::msg::AcommsTxByteArray::SharedPtr msg);
-
-    /**
-     * @brief slot that the driver calls when it wants to send data
-     *
-     * @param msg pointer to the outgoing message the driver is requesting
-     */
-    void dataRequest(goby::acomms::protobuf::ModemTransmission *msg);
-
-    /**
-     * @brief the slot that is called back from the driver when a new message is received.
-     *
-     * @param data_msg the incoming message
-     */
-    void receivedData(const goby::acomms::protobuf::ModemTransmission &data_msg);
 };
+

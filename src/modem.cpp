@@ -14,11 +14,11 @@
     You should have received a copy of the GNU General Public License
     along with the project.  If not, see <https://www.gnu.org/licenses/>.
 
-    Author: Jason Miller, jason_miller@uri.edu
-    Author: Lin Zhao, linzhao@uri.edu
-    Year: 2023-2024
+    Author: Jason Miller
+    Email: jason_miller@uri.edu
+    Year: 2023
 
-    Copyright (C) 2023-2024 Smart Ocean Systems Laboratory
+    Copyright (C) 2023 Smart Ocean Systems Laboratory
 */
 
 #include "modem.hpp"
@@ -26,311 +26,118 @@
 using goby::glog;
 using goby::util::as;
 
-using namespace std::chrono_literals;
-
-Modem::Modem(std::string name) : Node(name)
+/**
+ * @brief Construct a Modem object
+ *
+ */
+Modem::Modem()
 {
-    RCLCPP_INFO(get_logger(), "Evologics ROS2 driver started!");
-
-    // ===================================================================== //
-    // setup param
-    // ===================================================================== //
+    nh_.reset(new ros::NodeHandle(""));
+    pnh_.reset(new ros::NodeHandle("~"));
 
     parseGobyParams();
 
     parseEvologicsParams();
 
+    
+
+    if (config_.type == "usbl")
+    {
+        evologics_usbllong_pub_ = nh_->advertise<acomms_msgs::UsblData>("evologics/usbllong", 10);
+
+        evo_driver_.set_usbl_callback(std::bind(&Modem::evologicsPositioningData, this, std::placeholders::_1));
+    }
+
     loadGoby();
 
     configModem();
 
-    // ===================================================================== //
-    // ROS2 setup
-    // ===================================================================== //
+    modem_tx_ = nh_->subscribe(config_.type + "/tx", 10, &Modem::addToBuffer, this);
+    modem_rx_ = nh_->advertise<acomms_msgs::AcommsRx>(config_.type + "/rx", 10);
 
-    if (config_.type == "usbl")
-    {
-        usbl_pub_ = this->create_publisher<acomms_msgs::msg::UsblData>(
-            "usbl_data", 10 );   
-
-        evo_driver_.set_usbl_callback(
-            std::bind(&Modem::evologicsPositioningData, this, std::placeholders::_1));
-    }
-
-    modem_tx_sub_ = this->create_subscription<acomms_msgs::msg::AcommsTx>(
-        config_.type + "/tx", 10, std::bind(&Modem::addToBuffer, this, std::placeholders::_1));
-
-    modem_tx_bytearray_sub_ = this->create_subscription<acomms_msgs::msg::AcommsTxByteArray>(
-        config_.type + "/tx_bytearray", 10, std::bind(&Modem::addBytesToBuffer, this, std::placeholders::_1));
-
-    modem_rx_pub_ = this->create_publisher<acomms_msgs::msg::AcommsRx>(
-        config_.type + "/rx", 10);
-
-    modem_rx_bytearray_pub_ = this->create_publisher<acomms_msgs::msg::AcommsRxByteArray>(
-        config_.type + "/rx_bytearray", 10); 
+    modem_tx_bytearray_ = nh_->subscribe(config_.type + "/tx_bytearray", 10, &Modem::addBytesToBuffer, this);
+    modem_rx_bytearray_ = nh_->advertise<std_msgs::ByteMultiArray>(config_.type + "/rx_bytearray", 10);
     
-    // ===================================================================== //
-    // setup main thread
-    // ===================================================================== //
     loop();
-    // loop_worker_ = std::thread([this] { loop(); });
-    // loop_worker_.detach();  
-
 }
 
+/**
+ * @brief Destroy the Modem:: Modem object
+ *
+ */
 Modem::~Modem()
 {
-    rclcpp::shutdown();
 }
 
 void Modem::loop()
 {
-    // loop at 10Hz
-    rclcpp::Rate rate(10); 
+    ros::Rate rate(10);
 
-    while (rclcpp::ok())
+    // loop at 10Hz
+    while (ros::ok())
     {
         evo_driver_.do_work();
-        mac_.do_work();
+        mac.do_work();
         buffer_.expire();
+
+        ros::spinOnce();
 
         rate.sleep();
     }
+    
 }
 
-void Modem::parseGobyParams() {
+void Modem::parseGobyParams()
+{
+    pnh_->param<std::string>("goby/driver", config_.driver, "evologics");
+    pnh_->param<int>("goby/max_frame_bytes", config_.max_frame_bytes, 100);
+    pnh_->param<int>("goby/mac_slot_time", config_.mac_slot_time, 10);
 
-    this->declare_parameter("goby.max_frame_bytes", 100);
-    this->get_parameter("goby.max_frame_bytes", config_.max_frame_bytes);
-
-    this->declare_parameter("goby.mac_slot_time", 10);
-    this->get_parameter("goby.mac_slot_time", config_.mac_slot_time);
-
-    this->declare_parameter("goby.dynamic_buffer.messages", 
-        std::vector<std::string>({"aa", "bb", "cc", "dd"}));
-    this->get_parameter("goby.dynamic_buffer.messages", 
-        config_.dynamic_buffer.messages);
+    pnh_->param<std::vector<std::string>>("goby/dynamic_buffer/messages", config_.dynamic_buffer.messages, {""});
 
     for (std::string message : config_.dynamic_buffer.messages)
     {
-        this->declare_parameter("goby.dynamic_buffer."+message+".ack", false);
-        this->get_parameter("goby.dynamic_buffer."+message+".ack", 
-            dynamic_buffer_config_[message].ack);
-
-        this->declare_parameter("goby.dynamic_buffer."+message+".blackout_time", 0);
-        this->get_parameter("goby.dynamic_buffer."+message+".blackout_time", 
-            dynamic_buffer_config_[message].blackout_time);
-
-        this->declare_parameter("goby.dynamic_buffer."+message+".max_queue", 0);
-        this->get_parameter("goby.dynamic_buffer."+message+".max_queue", 
-            dynamic_buffer_config_[message].max_queue);
-
-        this->declare_parameter("goby.dynamic_buffer."+message+".newest_first", true);
-        this->get_parameter("goby.dynamic_buffer."+message+".newest_first", 
-            dynamic_buffer_config_[message].newest_first);      
-
-        this->declare_parameter("goby.dynamic_buffer."+message+".ttl", 1800);
-        this->get_parameter("goby.dynamic_buffer."+message+".ttl", 
-            dynamic_buffer_config_[message].ttl);            
-
-        this->declare_parameter("goby.dynamic_buffer."+message+".value_base", 1);
-        this->get_parameter("goby.dynamic_buffer."+message+".value_base", 
-            dynamic_buffer_config_[message].value_base);                             
-    }   
+        pnh_->param<bool>("goby/dynamic_buffer/" + message + "/ack", dynamic_buffer_config_[message].ack, false);
+        pnh_->param<int>("goby/dynamic_buffer/" + message + "/blackout_time", dynamic_buffer_config_[message].blackout_time, 0);
+        pnh_->param<int>("goby/dynamic_buffer/" + message + "/max_queue", dynamic_buffer_config_[message].max_queue, 0);
+        pnh_->param<bool>("goby/dynamic_buffer/" + message + "/newest_first", dynamic_buffer_config_[message].newest_first, true);
+        pnh_->param<int>("goby/dynamic_buffer/" + message + "/ttl", dynamic_buffer_config_[message].ttl, 1800);
+        pnh_->param<int>("goby/dynamic_buffer/" + message + "/value_base", dynamic_buffer_config_[message].value_base, 1);
+    }
 }
 
 void Modem::parseEvologicsParams()
 {
-    this->declare_parameter(
-        "type", "modem");
-    this->get_parameter(
-        "type", config_.type);
-
-    this->declare_parameter(
-        config_.type+"_configuration.interface.connection_type", "tcp");
-    this->get_parameter(
-        config_.type+"_configuration.interface.connection_type", 
-        config_.interface.if_type);
-
-    this->declare_parameter(
-        config_.type+"_configuration.interface.tcp_address", "192.168.2.109");
-    this->get_parameter(
-        config_.type+"_configuration.interface.tcp_address", 
-        config_.interface.tcp_address);
-
-    this->declare_parameter(
-        config_.type+"_configuration.interface.tcp_port", 9200);
-    this->get_parameter(
-        config_.type+"_configuration.interface.tcp_port", 
-        config_.interface.tcp_port);
-
-    this->declare_parameter(
-        config_.type+"_configuration.interface.device", "/dev/ttyUSB0");
-    this->get_parameter(
-        config_.type+"_configuration.interface.device", 
-        config_.interface.device);
-
-    this->declare_parameter(
-        config_.type+"_configuration.interface.baudrate", 115200);
-    this->get_parameter(
-        config_.type+"_configuration.interface.baudrate", 
-        config_.interface.baudrate);
-
-    this->declare_parameter(
-        config_.type+"_configuration.source_level", 0);
-    this->get_parameter(
-        config_.type+"_configuration.source_level", 
-        config_.source_level);
-
-    this->declare_parameter(
-        config_.type+"_configuration.source_control", 1);
-    this->get_parameter(
-        config_.type+"_configuration.source_control", 
-        config_.source_control);
-
-    this->declare_parameter(
-        config_.type+"_configuration.gain_level", 0);
-    this->get_parameter(
-        config_.type+"_configuration.gain_level", 
-        config_.gain_level);
-
-    this->declare_parameter(
-        config_.type+"_configuration.carrier_waveform_id", 0);
-    this->get_parameter(
-        config_.type+"_configuration.carrier_waveform_id", 
-        config_.carrier_waveform_id);
-
-    this->declare_parameter(
-        config_.type+"_configuration.local_address", 2);
-    this->get_parameter(
-        config_.type+"_configuration.local_address", 
-        config_.local_address);
-
-    this->declare_parameter(
-        config_.type+"_configuration.remote_address", 1);
-    this->get_parameter(
-        config_.type+"_configuration.remote_address", 
-        config_.remote_address);
-
-    this->declare_parameter(
-        config_.type+"_configuration.highest_address", 2);
-    this->get_parameter(
-        config_.type+"_configuration.highest_address", 
-        config_.highest_address);
-
-    this->declare_parameter(
-        config_.type+"_configuration.cluster_size", 10);
-    this->get_parameter(
-        config_.type+"_configuration.cluster_size", 
-        config_.cluster_size);
-
-    this->declare_parameter(
-        config_.type+"_configuration.packet_time", 750);
-    this->get_parameter(
-        config_.type+"_configuration.packet_time", 
-        config_.packet_time);
-
-    this->declare_parameter(
-        config_.type+"_configuration.retry_count", 3);
-    this->get_parameter(
-        config_.type+"_configuration.retry_count", 
-        config_.retry_count);
-
-    this->declare_parameter(
-        config_.type+"_configuration.retry_timeout", 4000);
-    this->get_parameter(
-        config_.type+"_configuration.retry_timeout", 
-        config_.retry_timeout);
-
-    this->declare_parameter(
-        config_.type+"_configuration.keep_online_count", 0);
-    this->get_parameter(
-        config_.type+"_configuration.keep_online_count", 
-        config_.keep_online_count);
-
-    this->declare_parameter(
-        config_.type+"_configuration.idle_timeout", 120);
-    this->get_parameter(
-        config_.type+"_configuration.idle_timeout", 
-        config_.idle_timeout);
-
-    this->declare_parameter(
-        config_.type+"_configuration.channel_protocol_id", 0);
-    this->get_parameter(
-        config_.type+"_configuration.channel_protocol_id", 
-        config_.channel_protocol_id);
-
-    this->declare_parameter(
-        config_.type+"_configuration.sound_speed", 1500);
-    this->get_parameter(
-        config_.type+"_configuration.sound_speed", 
-        config_.sound_speed);
+    pnh_->param<std::string>("type", config_.type, "modem");
+    pnh_->param<std::string>(config_.type + "_configuration/interface/connection_type", config_.interface.if_type, "tcp");
+    pnh_->param<std::string>(config_.type + "_configuration/interface/tcp_address", config_.interface.tcp_address, "192.168.2.109");
+    pnh_->param<int>(config_.type + "_configuration/interface/tcp_port", config_.interface.tcp_port, 9200);
+    pnh_->param<std::string>(config_.type + "_configuration/interface/device", config_.interface.device, "/dev/ttyUSB0");
+    pnh_->param<int>(config_.type + "_configuration/interface/baudrate", config_.interface.baudrate, 115200);
+    pnh_->param<int>(config_.type + "_configuration/source_level", config_.source_level, 0);
+    pnh_->param<int>(config_.type + "_configuration/source_control", config_.source_control, 1);
+    pnh_->param<int>(config_.type + "_configuration/gain_level", config_.gain_level, 0);
+    pnh_->param<int>(config_.type + "_configuration/carrier_waveform_id", config_.carrier_waveform_id, 0);
+    pnh_->param<int>(config_.type + "_configuration/local_address", config_.local_address, 2);
+    pnh_->param<int>(config_.type + "_configuration/remote_address", config_.remote_address, 1);
+    pnh_->param<int>(config_.type + "_configuration/highest_address", config_.highest_address, 2);
+    pnh_->param<int>(config_.type + "_configuration/cluster_size", config_.cluster_size, 10);
+    pnh_->param<int>(config_.type + "_configuration/packet_time", config_.packet_time, 750);
+    pnh_->param<int>(config_.type + "_configuration/retry_count", config_.retry_count, 3);
+    pnh_->param<int>(config_.type + "_configuration/retry_timeout", config_.retry_timeout, 4000);
+    pnh_->param<int>(config_.type + "_configuration/keep_online_count", config_.keep_online_count, 0);
+    pnh_->param<int>(config_.type + "_configuration/idle_timeout", config_.idle_timeout, 120);
+    pnh_->param<int>(config_.type + "_configuration/channel_protocol_id", config_.channel_protocol_id, 0);
+    pnh_->param<int>(config_.type + "_configuration/sound_speed", config_.sound_speed, 1500);
 }
 
-void Modem::configModem()
-{
-    evo_driver_.set_source_level(config_.source_level);
-
-    evo_driver_.set_source_control(config_.source_control);
-
-    evo_driver_.set_gain(config_.gain_level);
-
-    evo_driver_.set_carrier_waveform_id(config_.carrier_waveform_id);
-
-    evo_driver_.set_local_address(config_.local_address);
-
-    evo_driver_.set_remote_address(config_.remote_address);
-
-    evo_driver_.set_highest_address(config_.highest_address);
-
-    evo_driver_.set_cluster_size(config_.cluster_size);
-
-    evo_driver_.set_packet_time(config_.packet_time);
-
-    evo_driver_.set_retry_count(config_.retry_count);
-
-    evo_driver_.set_retry_timeout(config_.retry_timeout);
-
-    evo_driver_.set_keep_online_count(config_.keep_online_count);
-
-    evo_driver_.set_idle_timeout(config_.idle_timeout);
-
-    evo_driver_.set_channel_protocol_id(config_.channel_protocol_id);
-
-    evo_driver_.set_sound_speed(config_.sound_speed);
-}
-
-void Modem::evologicsPositioningData(UsbllongMsg msg)
-{
-    // create the msg type
-    acomms_msgs::msg::UsblData usbl_msg;
-    usbl_msg.header.frame_id = "evologics";
-    usbl_msg.header.stamp = rclcpp::Clock(RCL_ROS_TIME).now();
-    usbl_msg.current_time = msg.current_time;
-    usbl_msg.measurement_time = msg.measurement_time;
-    usbl_msg.remote_address = msg.remote_address;
-    usbl_msg.xyz.x = msg.xyz.x;
-    usbl_msg.xyz.y = msg.xyz.y;
-    usbl_msg.xyz.z = msg.xyz.z;
-    usbl_msg.enu.x = msg.enu.e;
-    usbl_msg.enu.y = msg.enu.n;
-    usbl_msg.enu.z = msg.enu.u;
-    usbl_msg.propagation_time = msg.propogation_time;
-    usbl_msg.rssi = msg.rssi;
-    usbl_msg.integrity = msg.integrity;
-    usbl_msg.accuracy = msg.accuracy;
-
-    // convert rpy to tf2::quaternion, then to geometry_msgs::Quaternion
-    tf2::Quaternion quaternion;
-    quaternion.setRPY(msg.rpy.roll, msg.rpy.pitch, msg.rpy.yaw); 
-    usbl_msg.orientation = tf2::toMsg(quaternion);
-
-    usbl_pub_->publish(usbl_msg);
-}
-
+/**
+ * @brief the goby dccl, mac, queue, and driver are configured and initialized
+ *
+ */
 void Modem::loadGoby()
 {
-    goby::acomms::bind(mac_, evo_driver_);
+    goby::acomms::bind(mac, evo_driver_);
 
     // connect the receive signal from the driver to the modem slot
     goby::acomms::connect(&evo_driver_.signal_receive, this, &Modem::receivedData);
@@ -345,15 +152,13 @@ void Modem::loadGoby()
 
     if (config_.interface.if_type == "tcp")
     {
-        driver_cfg.set_connection_type(
-            goby::acomms::protobuf::DriverConfig_ConnectionType_CONNECTION_TCP_AS_CLIENT);
+        driver_cfg.set_connection_type(goby::acomms::protobuf::DriverConfig_ConnectionType_CONNECTION_TCP_AS_CLIENT);
         driver_cfg.set_tcp_server(config_.interface.tcp_address);
         driver_cfg.set_tcp_port(config_.interface.tcp_port);
     }
     else if (config_.interface.if_type == "serial")
     {
-        driver_cfg.set_connection_type(
-            goby::acomms::protobuf::DriverConfig_ConnectionType_CONNECTION_SERIAL);
+        driver_cfg.set_connection_type(goby::acomms::protobuf::DriverConfig_ConnectionType_CONNECTION_SERIAL);
         driver_cfg.set_serial_port(config_.interface.device);
         driver_cfg.set_serial_baud(config_.interface.baudrate);
     }
@@ -396,7 +201,7 @@ void Modem::loadGoby()
     goby::glog.add_stream(goby::util::logger::DEBUG1, &std::clog);
 
     // startup the mac and evo_driver_
-    mac_.startup(mac_cfg);
+    mac.startup(mac_cfg);
     evo_driver_.startup(driver_cfg);
 
     loadBuffer();
@@ -411,6 +216,7 @@ void Modem::loadBuffer()
 
     while (it != dynamic_buffer_config_.end())
     {
+
         cfg.set_ack_required(it->second.ack);
         cfg.set_blackout_time(it->second.blackout_time);
         cfg.set_max_queue(it->second.max_queue);
@@ -426,29 +232,45 @@ void Modem::loadBuffer()
     }
 }
 
-void Modem::receivedData(const goby::acomms::protobuf::ModemTransmission &data_msg)
+void Modem::configModem()
 {
-    // string msg
-    acomms_msgs::msg::AcommsRx msg;
 
-    msg.header.frame_id = "evologics";
-    msg.header.stamp = rclcpp::Clock(RCL_ROS_TIME).now();
-    msg.data = data_msg.frame()[0];
+    evo_driver_.set_source_level(config_.source_level);
 
-    modem_rx_pub_->publish(msg);
+    evo_driver_.set_source_control(config_.source_control);
 
-    // UInt8MultiArray msg
+    evo_driver_.set_gain(config_.gain_level);
 
-    acomms_msgs::msg::AcommsRxByteArray byte_msg;
+    evo_driver_.set_carrier_waveform_id(config_.carrier_waveform_id);
 
-    byte_msg.header.frame_id = "evologics";
-    byte_msg.header.stamp = rclcpp::Clock(RCL_ROS_TIME).now();
-    std::vector<uint8_t> data(data_msg.frame()[0].begin(), data_msg.frame()[0].end());
-    byte_msg.msg.data = data;
+    evo_driver_.set_local_address(config_.local_address);
 
-    modem_rx_bytearray_pub_->publish(byte_msg);
+    evo_driver_.set_remote_address(config_.remote_address);
+
+    evo_driver_.set_highest_address(config_.highest_address);
+
+    evo_driver_.set_cluster_size(config_.cluster_size);
+
+    evo_driver_.set_packet_time(config_.packet_time);
+
+    evo_driver_.set_retry_count(config_.retry_count);
+
+    evo_driver_.set_retry_timeout(config_.retry_timeout);
+
+    evo_driver_.set_keep_online_count(config_.keep_online_count);
+
+    evo_driver_.set_idle_timeout(config_.idle_timeout);
+
+    evo_driver_.set_channel_protocol_id(config_.channel_protocol_id);
+
+    evo_driver_.set_sound_speed(config_.sound_speed);
 }
 
+/**
+ * @brief slot that the driver calls when it wants to send data
+ *
+ * @param msg pointer to the outgoing message the driver is requesting
+ */
 void Modem::dataRequest(goby::acomms::protobuf::ModemTransmission *msg)
 {
     int dest = msg->dest();
@@ -475,41 +297,90 @@ void Modem::dataRequest(goby::acomms::protobuf::ModemTransmission *msg)
     
 }
 
-void Modem::addToBuffer(const acomms_msgs::msg::AcommsTx::SharedPtr msg)
+void Modem::addToBuffer(const acomms_msgs::AcommsTxConstPtr& msg)
 {
-    if (dynamic_buffer_config_.find(msg->subbuffer_id) != 
-        dynamic_buffer_config_.end())
+    if (dynamic_buffer_config_.find(msg->subbuffer_id) != dynamic_buffer_config_.end())
     {
-        buffer_.push({config_.remote_address, msg->subbuffer_id, 
-                      goby::time::SteadyClock::now(), msg->data});
+        buffer_.push({config_.remote_address, msg->subbuffer_id, goby::time::SteadyClock::now(), msg->data});
 
-        RCLCPP_INFO(get_logger(), "Data Added to Buffer: %s", 
-            goby::util::hex_encode(msg->data).c_str()); //cnr
+        printf("Data Added to Buffer: %s\n", goby::util::hex_encode(msg->data).c_str());
     }
     else
     {
-        RCLCPP_INFO(get_logger(), "Subbuffer ID: %s has not been added to the configuratiron file goby.yaml", 
-            msg->subbuffer_id.data()); //cnr
+        ROS_INFO("Subbuffer ID: %s has not been added to the configuratiron file goby.yaml\n", msg->subbuffer_id.data());
     }
 }
 
-void Modem::addBytesToBuffer(const acomms_msgs::msg::AcommsTxByteArray::SharedPtr msg)
+void Modem::addBytesToBuffer(const acomms_msgs::AcommsTxByteArrayConstPtr& msg)
 {
-    if (dynamic_buffer_config_.find(msg->subbuffer_id) 
-        != dynamic_buffer_config_.end())
+    if (dynamic_buffer_config_.find(msg->subbuffer_id) != dynamic_buffer_config_.end())
     {
         auto out = msg->msg.data;
 
         std::string str(msg->msg.data.begin(), msg->msg.data.end());
 
-        buffer_.push({config_.remote_address, msg->subbuffer_id, goby::time::SteadyClock::now(), str});
+        buffer_.push({config_.remote_address, msg->subbuffer_id, goby::time::SteadyClock::now(),str });
 
-        RCLCPP_INFO(get_logger(), "Data Added to Buffer: %s", 
-            goby::util::hex_encode(str).c_str()); 
+        printf("Data Added to Buffer: %s\n", goby::util::hex_encode(str).c_str());
     }
     else
     {
-        RCLCPP_INFO(get_logger(), "Subbuffer ID: %s has not been added to the configuratiron file goby.yaml", 
-            msg->subbuffer_id.data()); 
+        ROS_INFO("Subbuffer ID: %s has not been added to the configuratiron file goby.yaml\n", msg->subbuffer_id.data());
     }
+}
+
+/**
+ * @brief the slot that is called back from the driver when a new message is received.
+ *
+ * @param data_msg the incoming message
+ */
+void Modem::receivedData(const goby::acomms::protobuf::ModemTransmission &data_msg)
+{
+    acomms_msgs::AcommsRx msg;
+
+    msg.data = data_msg.frame()[0];
+
+    modem_rx_.publish(msg);
+
+    acomms_msgs::AcommsRxByteArray byte_msg;
+    std::vector<uint8_t> data(data_msg.frame()[0].begin(), data_msg.frame()[0].end());
+    byte_msg.msg.data = data;
+
+    modem_rx_bytearray_.publish(byte_msg);
+}
+
+void Modem::evologicsPositioningData(UsbllongMsg msg)
+{
+    acomms_msgs::UsblData usbl_msg;
+
+    usbl_msg.current_time = msg.current_time;
+    usbl_msg.measurement_time = msg.measurement_time;
+    usbl_msg.remote_address = msg.remote_address;
+    usbl_msg.xyz.x = msg.xyz.x;
+    usbl_msg.xyz.y = msg.xyz.y;
+    usbl_msg.xyz.z = msg.xyz.z;
+    usbl_msg.enu.x = msg.enu.e;
+    usbl_msg.enu.y = msg.enu.n;
+    usbl_msg.enu.z = msg.enu.u;
+    // usbl_msg.rpy.x = msg.rpy.roll;
+    // usbl_msg.rpy.y = msg.rpy.pitch;
+    // usbl_msg.rpy.z = msg.rpy.yaw;
+    usbl_msg.propagation_time = msg.propogation_time;
+    usbl_msg.rssi = msg.rssi;
+    usbl_msg.integrity = msg.integrity;
+    usbl_msg.accuracy = msg.accuracy;
+
+    evologics_usbllong_pub_.publish(usbl_msg);
+}
+
+int main(int argc, char *argv[])
+{
+
+    ros::init(argc, argv, "modem");
+
+    Modem d;
+
+    ros::spin();
+
+    return 0;
 }
