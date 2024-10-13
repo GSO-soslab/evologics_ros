@@ -6,19 +6,19 @@
 /vampire/evologics_ros_node:
   ros__parameters:
 
-    type: "usbl"
+    type: "modem"
 
     usbl_configuration:
 
       interface:
 
-        connection_type: "tcp"
+        connection_type: "serial"
 
         tcp_address: "192.168.2.109"
         tcp_port: 9200
 
         device: /dev/ttyUSB0
-        baudrate: 115200
+        baudrate: 19200
 
       # Note: Transducer Source Level (0 = Maximum, 1 = -6dB, 2 = -12dB, 3 = -20dB)
       source_level: 3
@@ -30,16 +30,16 @@
       gain_level: 1
 
       # Note: Carrier Waveform ID (0-3) (0-1 for 2 devices, 2-2 and 3-3 for networking)
-      carrier_waveform_id: 0
+      carrier_waveform_id: 2
 
       # Note: Local Address (1-Highest Address)
-      local_address: 1
+      local_address: 3
 
       # Note: Remote Address (0-Highest Address) (0 can listen to all transmission but cannot send to any)
       remote_address: 2
 
       # Note: Highest Address (2,6,14,30,62,126,254)
-      highest_address: 2
+      highest_address: 6
 
       # Note: Cluster Size (1-31) (Communication between moving objects should be <10. Stationary cases may be higher)
       cluster_size: 10
@@ -71,34 +71,34 @@
 
       interface:
 
-        connection_type: "tcp"
+        connection_type: "serial"
 
         tcp_address: "192.168.2.108"
         tcp_port: 9200
 
         device: /dev/ttyUSB0
-        baudrate: 115200
+        baudrate: 19200
 
       # Note: Transducer Source Level (0 = Maximum, 1 = -6dB, 2 = -12dB, 3 = -20dB)
-      source_level: 0
+      source_level: 3
 
       # Note: Source Control Level (0 = Cannot be changed by remote, 1 = Can be changed by remote)
       source_control: 1
 
       # Note: Gain (0 = Normal gain, 1 = Low gain (-20dB sensitivity) (short distance/testing))
-      gain_level: 0
+      gain_level: 1
 
       # Note: Carrier Waveform ID (0-3) (0-1 for 2 devices, 2-2 and 3-3 for networking)
-      carrier_waveform_id: 1
+      carrier_waveform_id: 2
 
       # Note: Local Address (1-Highest Address)
       local_address: 2
 
       # Note: Remote Address (0-Highest Address) (0 can listen to all transmission but cannot send to any)
-      remote_address: 1
+      remote_address: 3
 
       # Note: Highest Address (2,6,14,30,62,126,254)
-      highest_address: 2
+      highest_address: 6
 
       # Note: Cluster Size (1-31) (Communication between moving objects should be <10. Stationary cases may be higher)
       cluster_size: 10

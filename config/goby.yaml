@@ -2,12 +2,12 @@
   ros__parameters:
     goby:
       max_frame_bytes: 500
-      mac_slot_time: 3
+      mac_slot_time: 10
       valid_depth: -1
 
       dynamic_buffer:
         #select the subbuffer_id(s) to load to the dynamic buffer
-        messages: ["pose_command", "pose_response", "power_command", "power_response"]
+        messages: ["example"]
 
         #buffer configuration (https://goby.software/3.0/md_doc101_acomms-queue.html)
         example:
