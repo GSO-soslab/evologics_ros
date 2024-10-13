@@ -300,7 +300,7 @@ void Modem::configModem()
     evo_driver_.set_sound_speed(config_.sound_speed);
 }
 
-void Modem::evologicsPositioningData(UsbllongMsg msg)
+void Modem::evologicsPositioningData(goby::acomms::EvologicsDriver::UsbllongMsg msg)
 {
     // create the msg type
     acomms_msgs::msg::UsblData usbl_msg;

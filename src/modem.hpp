@@ -176,7 +176,7 @@ private:
 
     void configModem();
 
-    void evologicsPositioningData(UsbllongMsg msg);
+    void evologicsPositioningData(goby::acomms::EvologicsDriver::UsbllongMsg msg);
 
     void addToBuffer(const acomms_msgs::msg::AcommsTx::SharedPtr msg);
 
