@@ -43,7 +43,7 @@ Modem::Modem()
 
     if (config_.type == "usbl")
     {
-        evologics_usbllong_pub_ = nh_->advertise<acomms_msgs::UsblData>("evologics/usbllong", 10);
+        usbl_pub_ = nh_->advertise<acomms_msgs::UsblData>("usbl_data", 10);
 
         evo_driver_.set_usbl_callback(std::bind(&Modem::evologicsPositioningData, this, std::placeholders::_1));
     }
@@ -285,7 +285,7 @@ void Modem::dataRequest(goby::acomms::protobuf::ModemTransmission *msg)
                 buffer_.top(dest, msg->max_frame_bytes() - frame->size());
 
             // *frame += buffer_value.data.data();
-            frame->append(buffer_value.data + '\n');
+            frame->append(buffer_value.data);
 
             buffer_.erase(buffer_value);
         }
@@ -349,7 +349,7 @@ void Modem::receivedData(const goby::acomms::protobuf::ModemTransmission &data_m
     modem_rx_bytearray_.publish(byte_msg);
 }
 
-void Modem::evologicsPositioningData(UsbllongMsg msg)
+void Modem::evologicsPositioningData(goby::acomms::EvologicsDriver::UsbllongMsg msg)
 {
     acomms_msgs::UsblData usbl_msg;
 
@@ -361,16 +361,17 @@ void Modem::evologicsPositioningData(UsbllongMsg msg)
     usbl_msg.xyz.z = msg.xyz.z;
     usbl_msg.enu.x = msg.enu.e;
     usbl_msg.enu.y = msg.enu.n;
-    usbl_msg.enu.z = msg.enu.u;
-    // usbl_msg.rpy.x = msg.rpy.roll;
-    // usbl_msg.rpy.y = msg.rpy.pitch;
-    // usbl_msg.rpy.z = msg.rpy.yaw;
     usbl_msg.propagation_time = msg.propogation_time;
     usbl_msg.rssi = msg.rssi;
     usbl_msg.integrity = msg.integrity;
     usbl_msg.accuracy = msg.accuracy;
 
-    evologics_usbllong_pub_.publish(usbl_msg);
+    tf2::Quaternion quaternion;
+    quaternion.setRPY(msg.rpy.roll, msg.rpy.pitch, msg.rpy.yaw);
+    usbl_msg.orientation = tf2::toMsg(quaternion);
+
+
+    usbl_pub_.publish(usbl_msg);
 }
 
 int main(int argc, char *argv[])

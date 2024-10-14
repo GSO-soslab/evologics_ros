@@ -32,6 +32,8 @@
 #include <acomms_msgs/AcommsTxByteArray.h>
 #include <geographic_msgs/GeoPoseStamped.h>
 #include <acomms_msgs/UsblData.h>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 #include <std_msgs/UInt8MultiArray.h>
 #include <std_msgs/ByteMultiArray.h>
@@ -70,7 +72,7 @@ private:
     ros::Subscriber modem_tx_bytearray_;
     ros::Publisher modem_rx_bytearray_;
 
-    ros::Publisher evologics_usbllong_pub_;
+    ros::Publisher usbl_pub_;
 
     ros::ServiceClient toll_;
 
@@ -141,7 +143,7 @@ private:
     void addToBuffer(const acomms_msgs::AcommsTxConstPtr& msg);
     void addBytesToBuffer(const acomms_msgs::AcommsTxByteArrayConstPtr &msg);
     void receivedData(const goby::acomms::protobuf::ModemTransmission &data_msg);
-    void evologicsPositioningData(UsbllongMsg msg);
+    void evologicsPositioningData(goby::acomms::EvologicsDriver::UsbllongMsg msg);
 
     goby::acomms::EvologicsDriver evo_driver_;
 
