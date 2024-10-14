@@ -1,7 +1,7 @@
 /vampire/evologics_ros_node:
   ros__parameters:
     goby:
-      max_frame_bytes: 500
+      max_frame_bytes: 1000
       mac_slot_time: 5
       valid_depth: -1
 
