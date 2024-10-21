@@ -14,7 +14,7 @@
 
         connection_type: "tcp"
 
-        tcp_address: "192.168.2.109"
+        tcp_address: "131.128.104.133"
         tcp_port: 9200
 
         device: /dev/ttyUSB0
@@ -71,12 +71,12 @@
 
       interface:
 
-        connection_type: "tcp"
+        connection_type: "serial"
 
         tcp_address: "192.168.2.108"
         tcp_port: 9200
 
-        device: /dev/ttyUSB0
+        device: /dev/ttyFT1B
         baudrate: 115200
 
       # Note: Transducer Source Level (0 = Maximum, 1 = -6dB, 2 = -12dB, 3 = -20dB)
