@@ -51,7 +51,7 @@ Modem::Modem(std::string name) : Node(name)
     if (config_.type == "usbl")
     {
         usbl_pub_ = this->create_publisher<acomms_msgs::msg::UsblData>(
-            "usbl_data", 10 );   
+            "/ship/usbl_data", 10 );   
 
         evo_driver_.set_usbl_callback(
             std::bind(&Modem::evologicsPositioningData, this, std::placeholders::_1));
