@@ -303,7 +303,7 @@ void Modem::evologicsPositioningData(goby::acomms::EvologicsDriver::UsbllongMsg 
 {
     // create the msg type
     acomms_msgs::msg::UsblData usbl_msg;
-    usbl_msg.header.frame_id = "evologics";
+    usbl_msg.header.frame_id = "usbl";
     usbl_msg.header.stamp = rclcpp::Clock(RCL_ROS_TIME).now();
     usbl_msg.current_time = msg.current_time;
     usbl_msg.measurement_time = msg.measurement_time;
