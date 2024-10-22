@@ -8,6 +8,8 @@
 
     type: "modem"
 
+    transmit_flag: true
+
     usbl_configuration:
 
       interface:

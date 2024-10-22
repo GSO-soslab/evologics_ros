@@ -8,6 +8,8 @@
 
     type: "usbl"
 
+    transmit_flag: true
+
     usbl_configuration:
 
       interface:
