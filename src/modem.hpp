@@ -41,6 +41,7 @@
 #include <acomms_msgs/msg/acomms_rx_byte_array.hpp>
 #include <acomms_msgs/msg/acomms_tx_byte_array.hpp>
 #include <acomms_msgs/msg/usbl_data.hpp>
+#include <acomms_msgs/msg/bool_stamped.hpp>
 
 //goby includes
 #include <goby/acomms/connect.h>
@@ -87,6 +88,7 @@ private:
     struct Config
     {
         std::string type;
+        bool transmit_flag;
         std::string driver;
         int max_frame_bytes;
         int mac_slot_time;
@@ -156,6 +158,9 @@ private:
     rclcpp::Publisher<acomms_msgs::msg::AcommsRxByteArray>::SharedPtr 
         modem_rx_bytearray_pub_;
 
+    rclcpp::Publisher<acomms_msgs::msg::BoolStamped>::SharedPtr
+        modem_transmit_flag_pub_;
+
     // ===================================================================== //
     // functions
     // ===================================================================== //
@@ -177,6 +182,8 @@ private:
     void configModem();
 
     void evologicsPositioningData(goby::acomms::EvologicsDriver::UsbllongMsg msg);
+
+    void onTransmit(bool flag);
 
     void addToBuffer(const acomms_msgs::msg::AcommsTx::SharedPtr msg);
 

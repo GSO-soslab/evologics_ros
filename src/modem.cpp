@@ -57,6 +57,9 @@ Modem::Modem(std::string name) : Node(name)
             std::bind(&Modem::evologicsPositioningData, this, std::placeholders::_1));
     }
 
+    evo_driver_.set_transmit_callback(
+        std::bind(&Modem::onTransmit, this, std::placeholders::_1));
+
     modem_tx_sub_ = this->create_subscription<acomms_msgs::msg::AcommsTx>(
         config_.type + "/tx", 10, std::bind(&Modem::addToBuffer, this, std::placeholders::_1));
 
@@ -68,6 +71,9 @@ Modem::Modem(std::string name) : Node(name)
 
     modem_rx_bytearray_pub_ = this->create_publisher<acomms_msgs::msg::AcommsRxByteArray>(
         config_.type + "/rx_bytearray", 10); 
+
+    modem_transmit_flag_pub_ = this->create_publisher<acomms_msgs::msg::BoolStamped>(
+        config_.type + "/transmit_flag", 10);
     
     // ===================================================================== //
     // setup main thread
@@ -145,6 +151,12 @@ void Modem::parseEvologicsParams()
         "type", "modem");
     this->get_parameter(
         "type", config_.type);
+
+    this->declare_parameter(
+        "transmit_flag", false);
+
+    this->get_parameter(
+        "transmit_flag", config_.transmit_flag);
 
     this->declare_parameter(
         config_.type+"_configuration.interface.connection_type", "tcp");
@@ -269,6 +281,9 @@ void Modem::parseEvologicsParams()
 
 void Modem::configModem()
 {
+    if(config_.transmit_flag){evo_driver_.extended_notification_on();}
+    else{evo_driver_.extended_notification_off();}
+
     evo_driver_.set_source_level(config_.source_level);
 
     evo_driver_.set_source_control(config_.source_control);
@@ -326,6 +341,15 @@ void Modem::evologicsPositioningData(goby::acomms::EvologicsDriver::UsbllongMsg 
     usbl_msg.orientation = tf2::toMsg(quaternion);
 
     usbl_pub_->publish(usbl_msg);
+}
+
+void Modem::onTransmit(bool flag)
+{
+    acomms_msgs::msg::BoolStamped msg;
+    msg.header.stamp = rclcpp::Clock(RCL_ROS_TIME).now();
+    msg.flag.data = flag;
+
+    modem_transmit_flag_pub_->publish(msg);
 }
 
 void Modem::loadGoby()
