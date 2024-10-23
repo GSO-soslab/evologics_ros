@@ -417,7 +417,7 @@ void Modem::loadGoby()
     }
 
     goby::glog.set_name(config_.type);
-    goby::glog.add_stream(goby::util::logger::DEBUG1, &std::clog);
+    // goby::glog.add_stream(goby::util::logger::DEBUG1, &std::clog);
 
     // startup the mac and evo_driver_
     mac_.startup(mac_cfg);
