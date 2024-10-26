@@ -60,6 +60,14 @@ Modem::Modem(std::string name) : Node(name)
     evo_driver_.set_transmit_callback(
         std::bind(&Modem::onTransmit, this, std::placeholders::_1));
 
+    evo_driver_.set_angles_callback(std::bind(&Modem::onAngles, this, std::placeholders::_1));
+
+    evo_driver_.set_phyd_callback(std::bind(&Modem::onPhyd, this, std::placeholders::_1));
+
+    modem_angles_pub_ = this->create_publisher<acomms_msgs::msg::UsblAngles>(config_.type + "/usbl_angles", 10);
+
+    modem_phyd_pub_ = this->create_publisher<acomms_msgs::msg::UsblPhyd>(config_.type + "/transducer_delays", 10);
+
     modem_tx_sub_ = this->create_subscription<acomms_msgs::msg::AcommsTx>(
         config_.type + "/tx", 10, std::bind(&Modem::addToBuffer, this, std::placeholders::_1));
 
@@ -347,9 +355,48 @@ void Modem::onTransmit(bool flag)
 {
     acomms_msgs::msg::BoolStamped msg;
     msg.header.stamp = rclcpp::Clock(RCL_ROS_TIME).now();
-    msg.flag.data = flag;
+    msg.flag = flag;
 
     modem_transmit_flag_pub_->publish(msg);
+}
+
+void Modem::onAngles(goby::acomms::EvologicsDriver::UsblAnglesMsg msg)
+{
+    acomms_msgs::msg::UsblAngles angles;
+    angles.current_time = msg.current_time;
+    angles.measurement_time = msg.measurement_time;
+    angles.remote_address = msg.remote_address;
+    angles.local_bearing = msg.local_bearing;
+    angles.local_elevation = msg.local_elevation;
+    angles.bearing = msg.bearing;
+    angles.elevation = msg.elevation;
+    angles.roll = msg.roll;
+    angles.pitch = msg.pitch;
+    angles.yaw = msg.yaw;
+    angles.rssi = msg.rssi;
+    angles.signal_integrity = msg.integrity;
+    angles.accuracy = msg.accuracy;
+
+    modem_angles_pub_->publish(angles);
+}
+
+void Modem::onPhyd(goby::acomms::EvologicsDriver::UsblPhydMsg msg)
+{
+    acomms_msgs::msg::UsblPhyd phyd;
+    phyd.current_time = msg.current_time;
+    phyd.measurement_time = msg.measurement_time;
+    phyd.remote_address = msg.remote_address;
+    phyd.fix_type = msg.fix_type;
+    phyd.delay_1_5 = msg.delay_1_5;
+    phyd.delay_2_5 = msg.delay_2_5;
+    phyd.delay_3_5 = msg.delay_3_5;
+    phyd.delay_4_5 = msg.delay_4_5;
+    phyd.delay_1_2 = msg.delay_1_2;
+    phyd.delay_4_1 = msg.delay_4_1;
+    phyd.delay_3_2 = msg.delay_3_2;
+    phyd.delay_3_4 = msg.delay_3_4;
+
+    modem_phyd_pub_->publish(phyd);
 }
 
 void Modem::loadGoby()

@@ -42,6 +42,8 @@
 #include <acomms_msgs/msg/acomms_tx_byte_array.hpp>
 #include <acomms_msgs/msg/usbl_data.hpp>
 #include <acomms_msgs/msg/bool_stamped.hpp>
+#include <acomms_msgs/msg/usbl_angles.hpp>
+#include <acomms_msgs/msg/usbl_phyd.hpp>
 
 //goby includes
 #include <goby/acomms/connect.h>
@@ -161,6 +163,12 @@ private:
     rclcpp::Publisher<acomms_msgs::msg::BoolStamped>::SharedPtr
         modem_transmit_flag_pub_;
 
+    rclcpp::Publisher<acomms_msgs::msg::UsblAngles>::SharedPtr
+        modem_angles_pub_;
+
+    rclcpp::Publisher<acomms_msgs::msg::UsblPhyd>::SharedPtr
+        modem_phyd_pub_;
+
     // ===================================================================== //
     // functions
     // ===================================================================== //
@@ -182,6 +190,10 @@ private:
     void configModem();
 
     void evologicsPositioningData(goby::acomms::EvologicsDriver::UsbllongMsg msg);
+
+    void onAngles(goby::acomms::EvologicsDriver::UsblAnglesMsg msg);
+
+    void onPhyd(goby::acomms::EvologicsDriver::UsblPhydMsg msg);
 
     void onTransmit(bool flag);
 
