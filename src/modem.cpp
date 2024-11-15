@@ -358,6 +358,7 @@ void Modem::evologicsPositioningData(goby::acomms::EvologicsDriver::UsbllongMsg 
     acomms_msgs::UsblData usbl_msg;
 
     usbl_msg.header.frame_id = "usbl";
+    usbl_msg.header.stamp = ros::Time::now();
 
     usbl_msg.current_time = msg.current_time;
     usbl_msg.measurement_time = msg.measurement_time;
