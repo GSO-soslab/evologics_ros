@@ -46,6 +46,9 @@ Modem::Modem()
         usbl_pub_ = nh_->advertise<acomms_msgs::UsblData>("usbl_data", 10);
 
         evo_driver_.set_usbl_callback(std::bind(&Modem::evologicsPositioningData, this, std::placeholders::_1));
+
+        if( config_.async_ping ){ timer_ = nh_->createTimer(ros::Duration(10), &Modem::usblPing, this); }
+
     }
 
     loadGoby();
@@ -109,6 +112,7 @@ void Modem::parseGobyParams()
 void Modem::parseEvologicsParams()
 {
     pnh_->param<std::string>("type", config_.type, "modem");
+    pnh_->param<bool>(config_.type + "_configuration/async_ping_mode", config_.async_ping, false);
     pnh_->param<std::string>(config_.type + "_configuration/interface/connection_type", config_.interface.if_type, "tcp");
     pnh_->param<std::string>(config_.type + "_configuration/interface/tcp_address", config_.interface.tcp_address, "192.168.2.109");
     pnh_->param<int>(config_.type + "_configuration/interface/tcp_port", config_.interface.tcp_port, 9200);
@@ -197,8 +201,8 @@ void Modem::loadGoby()
         mac_cfg.add_slot()->CopyFrom(my_slot);
     }
 
-    goby::glog.set_name(config_.type);
-    goby::glog.add_stream(goby::util::logger::DEBUG1, &std::clog);
+    // goby::glog.set_name(config_.type);
+    // goby::glog.add_stream(goby::util::logger::DEBUG1, &std::clog);
 
     // startup the mac and evo_driver_
     mac.startup(mac_cfg);
@@ -353,6 +357,8 @@ void Modem::evologicsPositioningData(goby::acomms::EvologicsDriver::UsbllongMsg 
 {
     acomms_msgs::UsblData usbl_msg;
 
+    usbl_msg.header.frame_id = "usbl";
+
     usbl_msg.current_time = msg.current_time;
     usbl_msg.measurement_time = msg.measurement_time;
     usbl_msg.remote_address = msg.remote_address;
@@ -372,6 +378,11 @@ void Modem::evologicsPositioningData(goby::acomms::EvologicsDriver::UsbllongMsg 
 
 
     usbl_pub_.publish(usbl_msg);
+}
+
+void Modem::usblPing(const ros::TimerEvent& event)
+{
+    evo_driver_.evologics_write("PING");
 }
 
 int main(int argc, char *argv[])

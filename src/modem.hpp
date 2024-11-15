@@ -76,7 +76,7 @@ private:
 
     ros::ServiceClient toll_;
 
-
+    ros::Timer timer_;
 
     struct Interface
     {
@@ -107,6 +107,7 @@ private:
     struct Config
     {
         std::string type;
+        bool async_ping;
         std::string driver;
         int max_frame_bytes;
         int mac_slot_time;
@@ -144,12 +145,11 @@ private:
     void addBytesToBuffer(const acomms_msgs::AcommsTxByteArrayConstPtr &msg);
     void receivedData(const goby::acomms::protobuf::ModemTransmission &data_msg);
     void evologicsPositioningData(goby::acomms::EvologicsDriver::UsbllongMsg msg);
+    void usblPing(const ros::TimerEvent& event);
 
     goby::acomms::EvologicsDriver evo_driver_;
 
     goby::acomms::DynamicBuffer<std::string> buffer_;
-
-    ros::Timer timer_;
 
     Config config_;
 
