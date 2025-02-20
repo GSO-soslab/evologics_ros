@@ -43,7 +43,7 @@ Modem::Modem()
 
     if (config_.type == "usbl")
     {
-        usbl_pub_ = nh_->advertise<acomms_msgs::UsblData>("usbl_data", 10);
+        usbl_pub_ = nh_->advertise<acomms_msgs::UsblData>("usbl/fix", 10);
 
         evo_driver_.set_usbl_callback(std::bind(&Modem::evologicsPositioningData, this, std::placeholders::_1));
 
@@ -368,6 +368,7 @@ void Modem::evologicsPositioningData(goby::acomms::EvologicsDriver::UsbllongMsg 
     usbl_msg.xyz.z = msg.xyz.z;
     usbl_msg.enu.x = msg.enu.e;
     usbl_msg.enu.y = msg.enu.n;
+    usbl_msg.enu.z = msg.enu.u;
     usbl_msg.propagation_time = msg.propogation_time;
     usbl_msg.rssi = msg.rssi;
     usbl_msg.integrity = msg.integrity;
