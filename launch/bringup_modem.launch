@@ -2,7 +2,7 @@
 
 <launch>
   <arg name="goby_config" default="$(find evologics_ros)/config/goby.yaml"/>
-  <arg name="driver_config" default="$(find evologics_ros)/config/evologics_modem4.yaml"/>
+  <arg name="driver_config" default="$(find evologics_ros)/config/evologics_modem2.yaml"/>
   <arg name="robot_name" value="wamv_rise"/>
 
   <node ns="$(arg robot_name)" pkg="evologics_ros" type="evologics_node" name="evologics_node" output="screen">
