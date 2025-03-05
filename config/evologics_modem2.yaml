@@ -8,10 +8,10 @@ config:
 
   interface:
 
-    connection_type: "serial"
+    connection_type: "tcp"
 
-    device: /dev/ttyUSB0
-    baudrate: 19200
+    tcp_address: "192.168.2.108"
+    tcp_port: 9200
 
   # Note: Transducer Source Level (0 = Maximum, 1 = -6dB, 2 = -12dB, 3 = -20dB)
   source_level: 0
