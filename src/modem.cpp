@@ -266,6 +266,8 @@ void Modem::configModem()
     evo_driver_.set_channel_protocol_id(config_.channel_protocol_id);
 
     evo_driver_.set_sound_speed(config_.sound_speed);
+
+    evo_driver_.save_settings();
 }
 
 /**
