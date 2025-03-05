@@ -2,14 +2,12 @@
 
 <launch>
   <arg name="goby_config" default="$(find evologics_ros)/config/goby.yaml"/>
-  <arg name="driver_config" default="$(find evologics_ros)/config/evologics.yaml"/>
+  <arg name="driver_config" default="$(find evologics_ros)/config/evologics_usbl1.yaml"/>
   <arg name="robot_name" value="wamv_rise"/>
 
-  <node ns="$(arg robot_name)" pkg="evologics_ros" type="modem_node" name="usbl_node" output="screen">
+  <node ns="$(arg robot_name)" pkg="evologics_ros" type="evologics_node" name="evologics_node" output="screen">
     <rosparam command="load" file="$(arg goby_config)"/>
     <rosparam command="load" file="$(arg driver_config)"/>
-    
-    <param name="type" value="usbl"/>
 
   </node>  
 

@@ -39,8 +39,6 @@ Modem::Modem()
 
     parseEvologicsParams();
 
-    
-
     if (config_.type == "usbl")
     {
         usbl_pub_ = nh_->advertise<acomms_msgs::UsblData>("usbl/fix", 10);
@@ -112,27 +110,27 @@ void Modem::parseGobyParams()
 void Modem::parseEvologicsParams()
 {
     pnh_->param<std::string>("type", config_.type, "modem");
-    pnh_->param<bool>(config_.type + "_configuration/async_ping_mode", config_.async_ping, false);
-    pnh_->param<std::string>(config_.type + "_configuration/interface/connection_type", config_.interface.if_type, "tcp");
-    pnh_->param<std::string>(config_.type + "_configuration/interface/tcp_address", config_.interface.tcp_address, "192.168.2.109");
-    pnh_->param<int>(config_.type + "_configuration/interface/tcp_port", config_.interface.tcp_port, 9200);
-    pnh_->param<std::string>(config_.type + "_configuration/interface/device", config_.interface.device, "/dev/ttyUSB0");
-    pnh_->param<int>(config_.type + "_configuration/interface/baudrate", config_.interface.baudrate, 115200);
-    pnh_->param<int>(config_.type + "_configuration/source_level", config_.source_level, 0);
-    pnh_->param<int>(config_.type + "_configuration/source_control", config_.source_control, 1);
-    pnh_->param<int>(config_.type + "_configuration/gain_level", config_.gain_level, 0);
-    pnh_->param<int>(config_.type + "_configuration/carrier_waveform_id", config_.carrier_waveform_id, 0);
-    pnh_->param<int>(config_.type + "_configuration/local_address", config_.local_address, 2);
-    pnh_->param<int>(config_.type + "_configuration/remote_address", config_.remote_address, 1);
-    pnh_->param<int>(config_.type + "_configuration/highest_address", config_.highest_address, 2);
-    pnh_->param<int>(config_.type + "_configuration/cluster_size", config_.cluster_size, 10);
-    pnh_->param<int>(config_.type + "_configuration/packet_time", config_.packet_time, 750);
-    pnh_->param<int>(config_.type + "_configuration/retry_count", config_.retry_count, 3);
-    pnh_->param<int>(config_.type + "_configuration/retry_timeout", config_.retry_timeout, 4000);
-    pnh_->param<int>(config_.type + "_configuration/keep_online_count", config_.keep_online_count, 0);
-    pnh_->param<int>(config_.type + "_configuration/idle_timeout", config_.idle_timeout, 120);
-    pnh_->param<int>(config_.type + "_configuration/channel_protocol_id", config_.channel_protocol_id, 0);
-    pnh_->param<int>(config_.type + "_configuration/sound_speed", config_.sound_speed, 1500);
+    pnh_->param<bool>("config/async_ping_mode", config_.async_ping, false);
+    pnh_->param<std::string>("config/interface/connection_type", config_.interface.if_type, "tcp");
+    pnh_->param<std::string>("config/interface/tcp_address", config_.interface.tcp_address, "192.168.2.109");
+    pnh_->param<int>("config/interface/tcp_port", config_.interface.tcp_port, 9200);
+    pnh_->param<std::string>("config/interface/device", config_.interface.device, "/dev/ttyUSB0");
+    pnh_->param<int>("config/interface/baudrate", config_.interface.baudrate, 115200);
+    pnh_->param<int>("config/source_level", config_.source_level, 0);
+    pnh_->param<int>("config/source_control", config_.source_control, 1);
+    pnh_->param<int>("config/gain_level", config_.gain_level, 0);
+    pnh_->param<int>("config/carrier_waveform_id", config_.carrier_waveform_id, 0);
+    pnh_->param<int>("config/local_address", config_.local_address, 2);
+    pnh_->param<int>("config/remote_address", config_.remote_address, 1);
+    pnh_->param<int>("config/highest_address", config_.highest_address, 2);
+    pnh_->param<int>("config/cluster_size", config_.cluster_size, 10);
+    pnh_->param<int>("config/packet_time", config_.packet_time, 750);
+    pnh_->param<int>("config/retry_count", config_.retry_count, 3);
+    pnh_->param<int>("config/retry_timeout", config_.retry_timeout, 4000);
+    pnh_->param<int>("config/keep_online_count", config_.keep_online_count, 0);
+    pnh_->param<int>("config/idle_timeout", config_.idle_timeout, 120);
+    pnh_->param<int>("config/channel_protocol_id", config_.channel_protocol_id, 0);
+    pnh_->param<int>("config/sound_speed", config_.sound_speed, 1500);
 }
 
 /**

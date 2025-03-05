@@ -60,14 +60,14 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_executable(modem_node
+add_executable(evologics_node
   src/modem.cpp
 )
 
-add_dependencies(modem_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(evologics_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 
-target_link_libraries(modem_node
+target_link_libraries(evologics_node
   ${catkin_LIBRARIES}
   ${PROTOBUF_LIBRARY}
   goby
