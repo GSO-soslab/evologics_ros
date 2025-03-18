@@ -19,7 +19,7 @@
       # Note: Gain (0 = Normal gain, 1 = Low gain (-20dB sensitivity) (short distance/testing))
       gain_level: 1
       # Note: Carrier Waveform ID (0-3) (0-1 for 2 devices, 2-2 and 3-3 for networking)
-      carrier_waveform_id: 0
+      carrier_waveform_id: 1
       # Note: Local Address (1-Highest Address)
       local_address: 3
       # Note: Remote Address (0-Highest Address) (0 can listen to all transmission but cannot send to any)
