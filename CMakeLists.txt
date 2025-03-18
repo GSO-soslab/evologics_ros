@@ -19,7 +19,6 @@ find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(geographic_msgs REQUIRED)
-find_package(robot_localization REQUIRED)
 find_package(acomms_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
@@ -41,7 +40,6 @@ set(ros_lib
   geometry_msgs
   geographic_msgs
   acomms_msgs
-  robot_localization
   tf2
   tf2_geometry_msgs
 )

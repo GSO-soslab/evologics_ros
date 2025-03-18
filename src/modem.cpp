@@ -42,6 +42,8 @@ Modem::Modem(std::string name) : Node(name)
 
     loadGoby();
 
+    configModem();
+
     // ===================================================================== //
     // ROS2 setup
     // ===================================================================== //
@@ -49,11 +51,27 @@ Modem::Modem(std::string name) : Node(name)
     if (config_.type == "usbl")
     {
         usbl_pub_ = this->create_publisher<acomms_msgs::msg::UsblData>(
-            "usbl_data", 10 );   
+            "/usbl/fix", 10 );
+
+        usbl_angles_pub_ = this->create_publisher<acomms_msgs::msg::UsblAngles>(
+            "/usbl/angles", 10);
+
+        usbl_phyd_pub_ = this->create_publisher<acomms_msgs::msg::UsblPhyd>(
+            "/usbl/transducer_delays", 10);
 
         evo_driver_.set_usbl_callback(
             std::bind(&Modem::evologicsPositioningData, this, std::placeholders::_1));
+
+        evo_driver_.set_angles_callback(std::bind(&Modem::onAngles, this, std::placeholders::_1));
+
+        evo_driver_.set_phyd_callback(std::bind(&Modem::onPhyd, this, std::placeholders::_1));
     }
+
+    evo_driver_.set_transmit_callback(
+        std::bind(&Modem::onTransmit, this, std::placeholders::_1));
+
+
+
 
     modem_tx_sub_ = this->create_subscription<acomms_msgs::msg::AcommsTx>(
         config_.type + "/tx", 10, std::bind(&Modem::addToBuffer, this, std::placeholders::_1));
@@ -66,11 +84,13 @@ Modem::Modem(std::string name) : Node(name)
 
     modem_rx_bytearray_pub_ = this->create_publisher<acomms_msgs::msg::AcommsRxByteArray>(
         config_.type + "/rx_bytearray", 10); 
+
+    modem_transmit_flag_pub_ = this->create_publisher<acomms_msgs::msg::BoolStamped>(
+        config_.type + "/transmit_flag", 10);
     
     // ===================================================================== //
     // setup main thread
     // ===================================================================== //
-
     loop_worker_ = std::thread([this] { loop(); });
     loop_worker_.detach();  
 
@@ -143,133 +163,175 @@ void Modem::parseEvologicsParams()
         "type", "modem");
     this->get_parameter(
         "type", config_.type);
+        
+    this->declare_parameter(
+        "transmit_flag", false);
+
+    this->get_parameter(
+        "transmit_flag", config_.transmit_flag);
 
     this->declare_parameter(
-        config_.type+"_configuration.interface.connection_type", "tcp");
+        "config.interface.connection_type", "tcp");
     this->get_parameter(
-        config_.type+"_configuration.interface.connection_type", 
+        "config.interface.connection_type", 
         config_.interface.if_type);
 
     this->declare_parameter(
-        config_.type+"_configuration.interface.tcp_address", "192.168.2.109");
+        "config.interface.tcp_address", "192.168.2.109");
     this->get_parameter(
-        config_.type+"_configuration.interface.tcp_address", 
+        "config.interface.tcp_address", 
         config_.interface.tcp_address);
 
     this->declare_parameter(
-        config_.type+"_configuration.interface.tcp_port", 9200);
+        "config.interface.tcp_port", 9200);
     this->get_parameter(
-        config_.type+"_configuration.interface.tcp_port", 
+        "config.interface.tcp_port", 
         config_.interface.tcp_port);
 
     this->declare_parameter(
-        config_.type+"_configuration.interface.device", "/dev/ttyUSB0");
+        "config.interface.device", "/dev/ttyUSB0");
     this->get_parameter(
-        config_.type+"_configuration.interface.device", 
+        "config.interface.device", 
         config_.interface.device);
 
     this->declare_parameter(
-        config_.type+"_configuration.interface.baudrate", 115200);
+        "config.interface.baudrate", 19200);
     this->get_parameter(
-        config_.type+"_configuration.interface.baudrate", 
+        "config.interface.baudrate", 
         config_.interface.baudrate);
 
     this->declare_parameter(
-        config_.type+"_configuration.source_level", 0);
+        "config.source_level", 0);
     this->get_parameter(
-        config_.type+"_configuration.source_level", 
+        "config.source_level", 
         config_.source_level);
 
     this->declare_parameter(
-        config_.type+"_configuration.source_control", 1);
+        "config.source_control", 1);
     this->get_parameter(
-        config_.type+"_configuration.source_control", 
+        "config.source_control", 
         config_.source_control);
 
     this->declare_parameter(
-        config_.type+"_configuration.gain_level", 0);
+        "config.gain_level", 0);
     this->get_parameter(
-        config_.type+"_configuration.gain_level", 
+        "config.gain_level", 
         config_.gain_level);
 
     this->declare_parameter(
-        config_.type+"_configuration.carrier_waveform_id", 0);
+        "config.carrier_waveform_id", 0);
     this->get_parameter(
-        config_.type+"_configuration.carrier_waveform_id", 
+        "config.carrier_waveform_id", 
         config_.carrier_waveform_id);
 
     this->declare_parameter(
-        config_.type+"_configuration.local_address", 2);
+        "config.local_address", 2);
     this->get_parameter(
-        config_.type+"_configuration.local_address", 
+        "config.local_address", 
         config_.local_address);
 
     this->declare_parameter(
-        config_.type+"_configuration.remote_address", 1);
+        "config.remote_address", 1);
     this->get_parameter(
-        config_.type+"_configuration.remote_address", 
+        "config.remote_address", 
         config_.remote_address);
 
     this->declare_parameter(
-        config_.type+"_configuration.highest_address", 2);
+        "config.highest_address", 2);
     this->get_parameter(
-        config_.type+"_configuration.highest_address", 
+        "config.highest_address", 
         config_.highest_address);
 
     this->declare_parameter(
-        config_.type+"_configuration.cluster_size", 10);
+        "config.cluster_size", 10);
     this->get_parameter(
-        config_.type+"_configuration.cluster_size", 
+        "config.cluster_size", 
         config_.cluster_size);
 
     this->declare_parameter(
-        config_.type+"_configuration.packet_time", 750);
+        "config.packet_time", 750);
     this->get_parameter(
-        config_.type+"_configuration.packet_time", 
+        "config.packet_time", 
         config_.packet_time);
 
     this->declare_parameter(
-        config_.type+"_configuration.retry_count", 3);
+        "config.retry_count", 3);
     this->get_parameter(
-        config_.type+"_configuration.retry_count", 
+        "config.retry_count", 
         config_.retry_count);
 
     this->declare_parameter(
-        config_.type+"_configuration.retry_timeout", 4000);
+        "config.retry_timeout", 4000);
     this->get_parameter(
-        config_.type+"_configuration.retry_timeout", 
+        "config.retry_timeout", 
         config_.retry_timeout);
 
     this->declare_parameter(
-        config_.type+"_configuration.keep_online_count", 0);
+        "config.keep_online_count", 0);
     this->get_parameter(
-        config_.type+"_configuration.keep_online_count", 
+        "config.keep_online_count", 
         config_.keep_online_count);
 
     this->declare_parameter(
-        config_.type+"_configuration.idle_timeout", 120);
+        "config.idle_timeout", 120);
     this->get_parameter(
-        config_.type+"_configuration.idle_timeout", 
+        "config.idle_timeout", 
         config_.idle_timeout);
 
     this->declare_parameter(
-        config_.type+"_configuration.channel_protocol_id", 0);
+        "config.channel_protocol_id", 0);
     this->get_parameter(
-        config_.type+"_configuration.channel_protocol_id", 
+        "config.channel_protocol_id", 
         config_.channel_protocol_id);
 
     this->declare_parameter(
-        config_.type+"_configuration.sound_speed", 1500);
+        "config.sound_speed", 1500);
     this->get_parameter(
-        config_.type+"_configuration.sound_speed", 
+        "config.sound_speed", 
         config_.sound_speed);
 }
 
-void Modem::evologicsPositioningData(UsbllongMsg msg)
+void Modem::configModem()
+{
+    if(config_.transmit_flag){evo_driver_.extended_notification_on();}
+    else{evo_driver_.extended_notification_off();}
+
+    evo_driver_.set_source_level(config_.source_level);
+
+    evo_driver_.set_source_control(config_.source_control);
+
+    evo_driver_.set_gain(config_.gain_level);
+
+    evo_driver_.set_carrier_waveform_id(config_.carrier_waveform_id);
+
+    evo_driver_.set_local_address(config_.local_address);
+
+    evo_driver_.set_remote_address(config_.remote_address);
+
+    evo_driver_.set_highest_address(config_.highest_address);
+
+    evo_driver_.set_cluster_size(config_.cluster_size);
+
+    evo_driver_.set_packet_time(config_.packet_time);
+
+    evo_driver_.set_retry_count(config_.retry_count);
+
+    evo_driver_.set_retry_timeout(config_.retry_timeout);
+
+    evo_driver_.set_keep_online_count(config_.keep_online_count);
+
+    evo_driver_.set_idle_timeout(config_.idle_timeout);
+
+    evo_driver_.set_channel_protocol_id(config_.channel_protocol_id);
+
+    evo_driver_.set_sound_speed(config_.sound_speed);
+}
+
+void Modem::evologicsPositioningData(goby::acomms::EvologicsDriver::UsbllongMsg msg)
 {
     // create the msg type
     acomms_msgs::msg::UsblData usbl_msg;
-    usbl_msg.header.frame_id = "evologics";
+    usbl_msg.header.frame_id = "usbl";
     usbl_msg.header.stamp = rclcpp::Clock(RCL_ROS_TIME).now();
     usbl_msg.current_time = msg.current_time;
     usbl_msg.measurement_time = msg.measurement_time;
@@ -291,6 +353,55 @@ void Modem::evologicsPositioningData(UsbllongMsg msg)
     usbl_msg.orientation = tf2::toMsg(quaternion);
 
     usbl_pub_->publish(usbl_msg);
+}
+
+void Modem::onAngles(goby::acomms::EvologicsDriver::UsblAnglesMsg msg)
+{
+    acomms_msgs::msg::UsblAngles angles;
+    angles.current_time = msg.current_time;
+    angles.measurement_time = msg.measurement_time;
+    angles.remote_address = msg.remote_address;
+    angles.local_bearing = msg.local_bearing;
+    angles.local_elevation = msg.local_elevation;
+    angles.bearing = msg.bearing;
+    angles.elevation = msg.elevation;
+    angles.roll = msg.roll;
+    angles.pitch = msg.pitch;
+    angles.yaw = msg.yaw;
+    angles.rssi = msg.rssi;
+    angles.signal_integrity = msg.integrity;
+    angles.accuracy = msg.accuracy;
+
+    usbl_angles_pub_->publish(angles);
+}
+
+void Modem::onPhyd(goby::acomms::EvologicsDriver::UsblPhydMsg msg)
+{
+    acomms_msgs::msg::UsblPhyd phyd;
+    phyd.current_time = msg.current_time;
+    phyd.measurement_time = msg.measurement_time;
+    phyd.remote_address = msg.remote_address;
+    phyd.fix_type = msg.fix_type;
+    phyd.delay_1_5 = msg.delay_1_5;
+    phyd.delay_2_5 = msg.delay_2_5;
+    phyd.delay_3_5 = msg.delay_3_5;
+    phyd.delay_4_5 = msg.delay_4_5;
+    phyd.delay_1_2 = msg.delay_1_2;
+    phyd.delay_4_1 = msg.delay_4_1;
+    phyd.delay_3_2 = msg.delay_3_2;
+    phyd.delay_3_4 = msg.delay_3_4;
+
+    usbl_phyd_pub_->publish(phyd);
+}
+
+
+void Modem::onTransmit(bool flag)
+{
+    acomms_msgs::msg::BoolStamped msg;
+    msg.header.stamp = rclcpp::Clock(RCL_ROS_TIME).now();
+    msg.flag = flag;
+
+    modem_transmit_flag_pub_->publish(msg);
 }
 
 void Modem::loadGoby()

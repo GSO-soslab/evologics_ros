@@ -19,7 +19,7 @@ def generate_launch_description():
         )
     
     # different param
-    evologics_param_file = os.path.join(param_path, 'evologics.yaml') 
+    evologics_param_file = os.path.join(param_path, 'evologics_modem3.yaml') 
 
     goby_param_file = os.path.join(param_path, 'goby.yaml') 
 
