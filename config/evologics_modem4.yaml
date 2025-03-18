@@ -8,7 +8,7 @@
     config:
       interface:
         connection_type: "serial"
-        device: /dev/ttyUSB0
+        device: /dev/ttyFT1B
         baudrate: 19200
 
       # Note: Transducer Source Level (0 = Maximum, 1 = -6dB, 2 = -12dB, 3 = -20dB)
