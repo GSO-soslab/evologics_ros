@@ -12,11 +12,11 @@
         baudrate: 19200
 
       # Note: Transducer Source Level (0 = Maximum, 1 = -6dB, 2 = -12dB, 3 = -20dB)
-      source_level: 0
+      source_level: 3
       # Note: Source Control Level (0 = Cannot be changed by remote, 1 = Can be changed by remote)
       source_control: 1
       # Note: Gain (0 = Normal gain, 1 = Low gain (-20dB sensitivity) (short distance/testing))
-      gain_level: 0
+      gain_level: 1
       # Note: Carrier Waveform ID (0-3) (0-1 for 2 devices, 2-2 and 3-3 for networking)
       carrier_waveform_id: 0
       # Note: Local Address (1-Highest Address)
@@ -36,9 +36,9 @@
       # Retry Timeout should exced the two-way travel time of the maximum operating range plus 1 second
       retry_timeout: 4000
       #Note: Keep Online Count (0 = acoustic connection will remain online, 1-255 = number of message exchanges to keep the connection online)
-      keep_online_count: 0
+      keep_online_count: 1
       #Note: Idle Timeout (0-3600s) The timeout before closing an idle acoustic connection
-      idle_timeout: 120
+      idle_timeout: 3600
       #Note: Channel Protocol ID (0-7) The data channel messages are exchanged on
       channel_protocol_id: 0
       #Note: Sound Speed (1300-1700m/s) The sound speed used to evaluate the range to the remote device
