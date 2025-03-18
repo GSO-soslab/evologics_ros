@@ -1,4 +1,4 @@
-/evologics_ros_node:
+/vampire/evologics_ros_node:
   ros__parameters:
     goby:
       max_frame_bytes: 1000
