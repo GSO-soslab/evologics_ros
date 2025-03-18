@@ -98,6 +98,8 @@ Modem::Modem(std::string name) : Node(name)
 
 Modem::~Modem()
 {
+    evo_driver_.clear_buffer();
+    evo_driver_.shutdown();
     rclcpp::shutdown();
 }
 
