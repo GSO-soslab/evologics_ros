@@ -51,13 +51,13 @@ Modem::Modem(std::string name) : Node(name)
     if (config_.type == "usbl")
     {
         usbl_pub_ = this->create_publisher<acomms_msgs::msg::UsblData>(
-            "/usbl/fix", 10 );
+            "usbl/fix", 10 );
 
         usbl_angles_pub_ = this->create_publisher<acomms_msgs::msg::UsblAngles>(
-            "/usbl/angles", 10);
+            "usbl/angles", 10);
 
         usbl_phyd_pub_ = this->create_publisher<acomms_msgs::msg::UsblPhyd>(
-            "/usbl/transducer_delays", 10);
+            "usbl/transducer_delays", 10);
 
         evo_driver_.set_usbl_callback(
             std::bind(&Modem::evologicsPositioningData, this, std::placeholders::_1));
@@ -65,6 +65,11 @@ Modem::Modem(std::string name) : Node(name)
         evo_driver_.set_angles_callback(std::bind(&Modem::onAngles, this, std::placeholders::_1));
 
         evo_driver_.set_phyd_callback(std::bind(&Modem::onPhyd, this, std::placeholders::_1));
+
+        // if(config_.async_ping_enabled)
+        // {
+        //     timer_ = this->create_wall_timer(std::chrono::seconds(config_.async_ping_period), std::bind(&Modem::usblPing, this));
+        // }
     }
 
     evo_driver_.set_transmit_callback(
@@ -107,6 +112,7 @@ void Modem::loop()
 {
     // loop at 10Hz
     rclcpp::Rate rate(10); 
+    int i =0;
 
     while (rclcpp::ok())
     {
@@ -114,6 +120,15 @@ void Modem::loop()
         mac_.do_work();
         buffer_.expire();
 
+        if(config_.async_ping_enabled)
+        {
+            if(i > config_.async_ping_period * 10)
+            {
+                i = 0;
+                evo_driver_.evologics_write("PING");
+            }
+        }
+        i++;
         rate.sleep();
     }
 }
@@ -171,6 +186,18 @@ void Modem::parseEvologicsParams()
 
     this->get_parameter(
         "transmit_flag", config_.transmit_flag);
+
+    this->declare_parameter(
+        "config.async_ping_enabled", false);
+
+    this->get_parameter(
+        "config.async_ping_enabled",config_.async_ping_enabled);
+
+    this->declare_parameter(
+        "config.async_ping_period", 10);
+
+    this->get_parameter(
+        "config.async_ping_period",config_.async_ping_period);
 
     this->declare_parameter(
         "config.interface.connection_type", "tcp");
@@ -333,7 +360,7 @@ void Modem::evologicsPositioningData(goby::acomms::EvologicsDriver::UsbllongMsg 
 {
     // create the msg type
     acomms_msgs::msg::UsblData usbl_msg;
-    usbl_msg.header.frame_id = "usbl";
+    usbl_msg.header.frame_id = "wamv_rise/usbl";
     usbl_msg.header.stamp = rclcpp::Clock(RCL_ROS_TIME).now();
     usbl_msg.current_time = msg.current_time;
     usbl_msg.measurement_time = msg.measurement_time;
@@ -590,4 +617,9 @@ void Modem::addBytesToBuffer(const acomms_msgs::msg::AcommsTxByteArray::SharedPt
         RCLCPP_INFO(get_logger(), "Subbuffer ID: %s has not been added to the configuratiron file goby.yaml", 
             msg->subbuffer_id.data()); 
     }
+}
+
+void Modem::usblPing()
+{
+    evo_driver_.evologics_write("PING");
 }

@@ -1,4 +1,4 @@
-/vampire/evologics_ros_node:
+/wamv_rise/evologics_ros_node:
   ros__parameters:
     goby:
       max_frame_bytes: 1000
@@ -7,10 +7,10 @@
 
       dynamic_buffer:
         #select the subbuffer_id(s) to load to the dynamic buffer
-        messages: ["vampire_state"]
+        messages: ["ping"]
 
         #buffer configuration (https://goby.software/3.0/md_doc101_acomms-queue.html)
-        vampire_state:
+        ping:
           ack: false
           blackout_time: 0
           max_queue: 1

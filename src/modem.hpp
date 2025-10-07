@@ -89,6 +89,9 @@ private:
 
     struct Config
     {
+        bool async_ping_enabled;
+        int async_ping_period;
+
         std::string type;
         bool transmit_flag;
         std::string driver;
@@ -169,6 +172,8 @@ private:
     rclcpp::Publisher<acomms_msgs::msg::BoolStamped>::SharedPtr
         modem_transmit_flag_pub_;
 
+    rclcpp::TimerBase::SharedPtr timer_;
+
     // ===================================================================== //
     // functions
     // ===================================================================== //
@@ -200,6 +205,8 @@ private:
     void addToBuffer(const acomms_msgs::msg::AcommsTx::SharedPtr msg);
 
     void addBytesToBuffer(const acomms_msgs::msg::AcommsTxByteArray::SharedPtr msg);
+
+    void usblPing();
 
     /**
      * @brief slot that the driver calls when it wants to send data

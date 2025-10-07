@@ -10,7 +10,7 @@ from launch.actions import TimerAction
 def generate_launch_description():
 
     # robot
-    robot_name = 'vampire'
+    robot_name = 'wamv_rise'
 
     # param path
     param_path = os.path.join(
@@ -38,7 +38,10 @@ def generate_launch_description():
                         parameters=[
                             evologics_param_file,
                             goby_param_file
-                        ]
+                        ],
+                        remappings=[
+                                ('usbl/fix', 'usbl_data'),
+                            ],
                     )
             ])
         
