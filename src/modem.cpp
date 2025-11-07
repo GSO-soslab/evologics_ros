@@ -42,8 +42,6 @@ Modem::Modem(std::string name) : Node(name)
 
     loadGoby();
 
-    configModem();
-
     // ===================================================================== //
     // ROS2 setup
     // ===================================================================== //
@@ -97,6 +95,9 @@ Modem::Modem(std::string name) : Node(name)
 
     modem_raw_rx_pub_ = this->create_publisher<acomms_msgs::msg::RawData>(
         config_.type + "/raw_rx", 10);
+    
+
+    configModem();
     
     // ===================================================================== //
     // setup main thread
