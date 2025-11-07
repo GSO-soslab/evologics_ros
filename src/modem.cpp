@@ -70,8 +70,12 @@ Modem::Modem(std::string name) : Node(name)
     evo_driver_.set_transmit_callback(
         std::bind(&Modem::onTransmit, this, std::placeholders::_1));
 
+    evo_driver_.set_raw_rx_callback(
+        std::bind(&Modem::onRawRx, this, std::placeholders::_1));
 
-
+    evo_driver_.set_raw_tx_callback(
+        std::bind(&Modem::onRawTx, this, std::placeholders::_1));
+    
 
     modem_tx_sub_ = this->create_subscription<acomms_msgs::msg::AcommsTx>(
         config_.type + "/tx", 10, std::bind(&Modem::addToBuffer, this, std::placeholders::_1));
@@ -87,6 +91,12 @@ Modem::Modem(std::string name) : Node(name)
 
     modem_transmit_flag_pub_ = this->create_publisher<acomms_msgs::msg::BoolStamped>(
         config_.type + "/transmit_flag", 10);
+
+    modem_raw_tx_pub_ = this->create_publisher<acomms_msgs::msg::RawData>(
+        config_.type + "/raw_tx", 10);
+
+    modem_raw_rx_pub_ = this->create_publisher<acomms_msgs::msg::RawData>(
+        config_.type + "/raw_rx", 10);
     
     // ===================================================================== //
     // setup main thread
@@ -327,6 +337,24 @@ void Modem::configModem()
     evo_driver_.set_channel_protocol_id(config_.channel_protocol_id);
 
     evo_driver_.set_sound_speed(config_.sound_speed);
+}
+
+void Modem::onRawRx(std::string raw_data)
+{
+    acomms_msgs::msg::RawData msg;
+    msg.header.stamp = rclcpp::Clock(RCL_ROS_TIME).now();
+    msg.data = raw_data;
+
+    modem_raw_rx_pub_->publish(msg);
+}
+
+void Modem::onRawTx(std::string raw_data)
+{
+    acomms_msgs::msg::RawData msg;
+    msg.header.stamp = rclcpp::Clock(RCL_ROS_TIME).now();
+    msg.data = raw_data;
+
+    modem_raw_tx_pub_->publish(msg);
 }
 
 void Modem::evologicsPositioningData(goby::acomms::EvologicsDriver::UsbllongMsg msg)

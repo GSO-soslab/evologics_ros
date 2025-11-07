@@ -44,6 +44,7 @@
 #include <acomms_msgs/msg/bool_stamped.hpp>
 #include <acomms_msgs/msg/usbl_angles.hpp>
 #include <acomms_msgs/msg/usbl_phyd.hpp>
+#include <acomms_msgs/msg/raw_data.hpp>
 
 //goby includes
 #include <goby/acomms/connect.h>
@@ -169,6 +170,12 @@ private:
     rclcpp::Publisher<acomms_msgs::msg::BoolStamped>::SharedPtr
         modem_transmit_flag_pub_;
 
+    rclcpp::Publisher<acomms_msgs::msg::RawData>::SharedPtr
+        modem_raw_tx_pub_;
+
+    rclcpp::Publisher<acomms_msgs::msg::RawData>::SharedPtr
+        modem_raw_rx_pub_;
+
     // ===================================================================== //
     // functions
     // ===================================================================== //
@@ -188,6 +195,10 @@ private:
     void parseEvologicsParams();
 
     void configModem();
+
+    void onRawRx(std::string raw_data);
+
+    void onRawTx(std::string raw_data);
 
     void evologicsPositioningData(goby::acomms::EvologicsDriver::UsbllongMsg msg);
 
