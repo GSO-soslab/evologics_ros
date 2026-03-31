@@ -37,18 +37,18 @@ MessageConverter::MessageConverter(std::string name) : Node(name)
 
 void MessageConverter::acomm_to_c2(const acomms_msgs::msg::AcommsRxByteArray::SharedPtr msg)
 {
-    // std_msgs::msg::ByteMultiArray data_out;
-    // data_out.data.assign(msg->msg.data.begin(), msg->msg.data.end());
-    // m_to_c2_pub->publish(data_out);
+    std_msgs::msg::ByteMultiArray data_out;
+    data_out.data.assign(msg->msg.data.begin(), msg->msg.data.end());
+    m_to_c2_pub->publish(data_out);
 
 }
 
 void MessageConverter::c2_to_acomm(const std_msgs::msg::ByteMultiArray::SharedPtr msg)
 {
-    // acomms_msgs::msg::AcommsTxByteArray data_out;
-    // data_out.msg.data.assign(msg->data.begin(), msg->data.end());
-    // data_out.subbfer_id = m_subbuffer_id;
-    // data_out.header.stamp = rclcpp::Clock(RCL_ROS_TIME).now();
-    // data_out.header.frame_id = m_frame_id;
-    // m_to_acomm_pub->publish(data_out);
+    acomms_msgs::msg::AcommsTxByteArray data_out;
+    data_out.msg.data.assign(msg->data.begin(), msg->data.end());
+    data_out.subbuffer_id = m_subbuffer_id;
+    data_out.header.stamp = rclcpp::Clock(RCL_ROS_TIME).now();
+    data_out.header.frame_id = m_frame_id;
+    m_to_acomm_pub->publish(data_out);
 }
