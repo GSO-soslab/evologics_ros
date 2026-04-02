@@ -54,19 +54,11 @@ add_executable(${PROJECT_NAME}_node
   src/modem.cpp
 )
 
-add_executable(${PROJECT_NAME}_message_converter_node
-  src/message_converter.cpp
-  src/message_converter_node.cpp
-)
 
 ## Corrected dependencies for ROS 2 
 ament_target_dependencies(${PROJECT_NAME}_node ${ros_lib})
 target_include_directories(${PROJECT_NAME}_node PRIVATE src evologics_driver/src)
 target_link_libraries(${PROJECT_NAME}_node ${other_lib})
-
-ament_target_dependencies(${PROJECT_NAME}_message_converter_node ${ros_lib})
-target_include_directories(${PROJECT_NAME}_message_converter_node PRIVATE src evologics_driver/src)
-target_link_libraries(${PROJECT_NAME}_message_converter_node ${other_lib})
 
 
 ####################################################################
@@ -79,11 +71,7 @@ install(TARGETS ${PROJECT_NAME}_node evologics_driver
   RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
-install(TARGETS ${PROJECT_NAME}_message_converter_node evologics_driver
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib
-  RUNTIME DESTINATION lib/${PROJECT_NAME}
-)
+
 # install(DIRECTORY include/
 #   DESTINATION include/
 # )
