@@ -49,13 +49,13 @@ Modem::Modem(std::string name) : Node(name)
     if (config_.type == "usbl")
     {
         usbl_pub_ = this->create_publisher<acomms_msgs::msg::UsblData>(
-            "/usbl/fix", 10 );
+            "usbl/fix", 10 );
 
         usbl_angles_pub_ = this->create_publisher<acomms_msgs::msg::UsblAngles>(
-            "/usbl/angles", 10);
+            "usbl/angles", 10);
 
         usbl_phyd_pub_ = this->create_publisher<acomms_msgs::msg::UsblPhyd>(
-            "/usbl/transducer_delays", 10);
+            "usbl/transducer_delays", 10);
 
         evo_driver_.set_usbl_callback(
             std::bind(&Modem::evologicsPositioningData, this, std::placeholders::_1));
