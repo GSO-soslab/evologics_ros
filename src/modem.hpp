@@ -114,6 +114,8 @@ private:
         int idle_timeout;
         int channel_protocol_id;
         int sound_speed;
+        bool async_ping_mode;
+        int async_ping_period_ms;
     };
 
     struct MessageConfig
@@ -161,11 +163,17 @@ private:
     rclcpp::Subscription<acomms_msgs::msg::AcommsTxByteArray>::SharedPtr 
         modem_tx_bytearray_sub_;    
 
+    rclcpp::Subscription<std_msgs::msg::ByteMultiArray>::SharedPtr 
+        modem_tx_byte_multi_array_sub_;   
+
     rclcpp::Publisher<acomms_msgs::msg::AcommsRx>::SharedPtr 
         modem_rx_pub_;
 
     rclcpp::Publisher<acomms_msgs::msg::AcommsRxByteArray>::SharedPtr 
         modem_rx_bytearray_pub_;
+
+    rclcpp::Publisher<std_msgs::msg::ByteMultiArray>::SharedPtr 
+        modem_rx_byte_multi_array_pub_;
 
     rclcpp::Publisher<acomms_msgs::msg::BoolStamped>::SharedPtr
         modem_transmit_flag_pub_;
@@ -225,4 +233,11 @@ private:
      * @param data_msg the incoming message
      */
     void receivedData(const goby::acomms::protobuf::ModemTransmission &data_msg);
+
+    void usblPing();
+
+    void directTx(const std_msgs::msg::ByteMultiArray msg);
+
+    rclcpp::TimerBase::SharedPtr timer_;
+    
 };

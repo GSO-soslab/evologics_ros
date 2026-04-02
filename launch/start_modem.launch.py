@@ -19,7 +19,7 @@ def generate_launch_description():
         )
     
     # different param
-    evologics_param_file = os.path.join(param_path, 'evologics_modem3.yaml') 
+    evologics_param_file = os.path.join(param_path, 'evologics_modem2.yaml') 
 
     goby_param_file = os.path.join(param_path, 'goby.yaml') 
 
@@ -32,7 +32,7 @@ def generate_launch_description():
                         package="evologics_ros",
                         executable="evologics_ros_node",
                         namespace=robot_name,
-                        name="evologics_ros_node",
+                        name="evologics_ros_node_modem",
                         prefix=['stdbuf -o L'],
                         output="screen",
                         parameters=[

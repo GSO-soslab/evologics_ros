@@ -32,7 +32,7 @@ def generate_launch_description():
                         package="evologics_ros",
                         executable="evologics_ros_node",
                         namespace=robot_name,
-                        name="evologics_ros_node",
+                        name="evologics_ros_node_usbl",
                         prefix=['stdbuf -o L'],
                         output="screen",
                         parameters=[

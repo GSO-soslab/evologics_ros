@@ -63,6 +63,17 @@ Modem::Modem(std::string name) : Node(name)
         evo_driver_.set_angles_callback(std::bind(&Modem::onAngles, this, std::placeholders::_1));
 
         evo_driver_.set_phyd_callback(std::bind(&Modem::onPhyd, this, std::placeholders::_1));
+        
+        printf("async_ping_mode = %b\r\n",config_.async_ping_mode);
+        printf("async_ping_period = %d\r\n",config_.async_ping_period_ms);
+        
+        if( config_.async_ping_mode ){
+            timer_ = this->create_wall_timer(
+                                            std::chrono::milliseconds(config_.async_ping_period_ms),   // timer period
+                                            std::bind(&Modem::usblPing, this)
+            );
+        }
+
     }
 
     evo_driver_.set_transmit_callback(
@@ -81,11 +92,17 @@ Modem::Modem(std::string name) : Node(name)
     modem_tx_bytearray_sub_ = this->create_subscription<acomms_msgs::msg::AcommsTxByteArray>(
         config_.type + "/tx_bytearray", 10, std::bind(&Modem::addBytesToBuffer, this, std::placeholders::_1));
 
+    modem_tx_byte_multi_array_sub_ = this->create_subscription<std_msgs::msg::ByteMultiArray>(
+        config_.type + "/tx_multibytearray", 10, std::bind(&Modem::directTx, this, std::placeholders::_1));
+
     modem_rx_pub_ = this->create_publisher<acomms_msgs::msg::AcommsRx>(
         config_.type + "/rx", 10);
 
     modem_rx_bytearray_pub_ = this->create_publisher<acomms_msgs::msg::AcommsRxByteArray>(
         config_.type + "/rx_bytearray", 10); 
+
+    modem_rx_byte_multi_array_pub_ = this->create_publisher<std_msgs::msg::ByteMultiArray>(
+        config_.type + "/rx_multibytearray", 10); 
 
     modem_transmit_flag_pub_ = this->create_publisher<acomms_msgs::msg::BoolStamped>(
         config_.type + "/transmit_flag", 10);
@@ -127,6 +144,19 @@ void Modem::loop()
 
         rate.sleep();
     }
+}
+
+void Modem::directTx(const std_msgs::msg::ByteMultiArray msg)
+{
+    std::string data = std::string(msg.data.begin(), msg.data.end());
+
+    evo_driver_.evologics_write(data);
+}
+
+void Modem::usblPing()
+{
+    printf("pinging \r\n");
+    evo_driver_.evologics_write("PING");
 }
 
 void Modem::parseGobyParams() {
@@ -182,6 +212,17 @@ void Modem::parseEvologicsParams()
 
     this->get_parameter(
         "transmit_flag", config_.transmit_flag);
+
+    this->declare_parameter(
+        "config.async_ping_mode", false);
+    this->get_parameter(
+        "config.async_ping_mode", config_.async_ping_mode);
+
+    this->declare_parameter(
+        "config.async_ping_period_ms", 5000);
+    this->get_parameter(
+        "config.async_ping_period_ms", config_.async_ping_period_ms
+    );
 
     this->declare_parameter(
         "config.interface.connection_type", "tcp");
@@ -554,6 +595,10 @@ void Modem::receivedData(const goby::acomms::protobuf::ModemTransmission &data_m
     byte_msg.msg.data = data;
 
     modem_rx_bytearray_pub_->publish(byte_msg);
+
+    std_msgs::msg::ByteMultiArray data_out;
+    data_out.data.assign(byte_msg.msg.data.begin(), byte_msg.msg.data.end());
+    modem_rx_byte_multi_array_pub_->publish(data_out);
 }
 
 void Modem::dataRequest(goby::acomms::protobuf::ModemTransmission *msg)
