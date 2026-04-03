@@ -6,6 +6,8 @@
     type: "modem"
     transmit_flag: true
     config:
+      unified_goby_message_mode: true
+      unified_goby_subbuffer_id: "dccl"
       interface:
         connection_type: "tcp"
         tcp_address: "192.168.2.108"

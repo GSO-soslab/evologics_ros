@@ -116,6 +116,8 @@ private:
         int sound_speed;
         bool async_ping_mode;
         int async_ping_period_ms;
+        bool unified_goby_message_mode;
+        std::string unified_goby_subbuffer_id;
     };
 
     struct MessageConfig
@@ -237,7 +239,7 @@ private:
     void usblPing();
 
     void directTx(const std_msgs::msg::ByteMultiArray msg);
-
+    
     rclcpp::TimerBase::SharedPtr timer_;
     
 };

@@ -146,12 +146,6 @@ void Modem::loop()
     }
 }
 
-void Modem::directTx(const std_msgs::msg::ByteMultiArray msg)
-{
-    std::string data = std::string(msg.data.begin(), msg.data.end());
-
-    evo_driver_.evologics_write(data);
-}
 
 void Modem::usblPing()
 {
@@ -222,8 +216,22 @@ void Modem::parseEvologicsParams()
         "config.async_ping_period_ms", 5000);
     this->get_parameter(
         "config.async_ping_period_ms", config_.async_ping_period_ms
-    );
+        );
 
+    this->declare_parameter(
+        "config.unified_goby_message_mode", false);
+    this->get_parameter(
+        "config.unified_goby_message_mode", config_.unified_goby_message_mode
+        );
+    
+    if(config_.unified_goby_message_mode)
+    { 
+    this->declare_parameter(
+        "config.unified_goby_subbuffer_id", "");
+    this->get_parameter(
+        "config.unified_goby_subbuffer_id", config_.unified_goby_subbuffer_id
+        );  
+    }
     this->declare_parameter(
         "config.interface.connection_type", "tcp");
     this->get_parameter(
@@ -644,6 +652,32 @@ void Modem::addToBuffer(const acomms_msgs::msg::AcommsTx::SharedPtr msg)
             msg->subbuffer_id.data()); //cnr
     }
 }
+
+void Modem::directTx(const std_msgs::msg::ByteMultiArray msg)
+{
+    acomms_msgs::msg::AcommsTx a_msg;
+    std::string data = std::string(msg.data.begin(), msg.data.end());
+    // evo_driver_.evologics_write(data);
+
+    a_msg.data = data;
+    a_msg.subbuffer_id = config_.unified_goby_subbuffer_id;
+    if (dynamic_buffer_config_.find(a_msg.subbuffer_id) != 
+        dynamic_buffer_config_.end())
+    {
+        buffer_.push({config_.remote_address, a_msg.subbuffer_id, 
+                      goby::time::SteadyClock::now(), a_msg.data});
+
+        RCLCPP_INFO(get_logger(), "Data Added to Buffer: %s", 
+            goby::util::hex_encode(a_msg.data).c_str()); //cnr
+    }
+    else
+    {
+        RCLCPP_INFO(get_logger(), "Subbuffer ID: %s has not been added to the configuratiron file goby.yaml", 
+            a_msg.subbuffer_id.data()); //cnr
+    }
+   
+}
+
 
 void Modem::addBytesToBuffer(const acomms_msgs::msg::AcommsTxByteArray::SharedPtr msg)
 {

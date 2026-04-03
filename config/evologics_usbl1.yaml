@@ -10,6 +10,8 @@
     config:
       async_ping_mode: false
       async_ping_period_ms: 5000
+      unified_goby_message_mode: true
+      unified_goby_subbuffer_id: "dccl"
       interface:
         connection_type: "tcp"
         tcp_address: "192.168.2.109"
