@@ -36,11 +36,7 @@ Modem::Modem(std::string name) : Node(name)
     // setup param
     // ===================================================================== //
 
-    parseGobyParams();
-
     parseEvologicsParams();
-
-    loadGoby();
 
     // ===================================================================== //
     // ROS2 setup
